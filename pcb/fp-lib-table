@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name micromouse2016)(type KiCad)(uri "$(KIPRJMOD)/lib/micromouse2016.pretty")(options "")(descr ""))
+)
