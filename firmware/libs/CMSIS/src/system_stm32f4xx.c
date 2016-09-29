@@ -252,12 +252,12 @@
 
 /************************* PLL Parameters *************************************/
 /* PLL_VCO = (HSE_VALUE or HSI_VALUE / PLL_M) * PLL_N */
-#define PLL_M      (HSE_VALUE/1000000)
-
+#define PLL_M      (HSI_VALUE/1000000)
+/*
 #if (PLL_M*1000000) != HSE_VALUE
 #error "HSE_VALUE not multiple of 1MHz, adjust the PLL settings"
 #endif
-
+*/
 /* USB OTG FS, SDIO and RNG Clock =  PLL_VCO / PLLQ */
 #define PLL_Q      7
 
@@ -476,31 +476,15 @@ void SystemCoreClockUpdate(void)
 static void SetSysClock(void)
 {
 /******************************************************************************/
-/*            PLL (clocked by HSE) used as System clock source                */
+/*            PLL (clocked by HSI) used as System clock source                */
 /******************************************************************************/
-  __IO uint32_t StartUpCounter = 0, HSEStatus = 0;
   
-  /* Enable HSE */
-  RCC->CR |= ((uint32_t)RCC_CR_HSEON);
+  /* Enable HSI */
+  RCC->CR |= ((uint32_t)RCC_CR_HSION);
  
-  /* Wait till HSE is ready and if Time out is reached exit */
-  do
-  {
-    HSEStatus = RCC->CR & RCC_CR_HSERDY;
-    StartUpCounter++;
-  } while((HSEStatus == 0) && (StartUpCounter != HSE_STARTUP_TIMEOUT));
+  /* Wait till HSI is ready */
+  while (!(RCC->CR & RCC_CR_HSIRDY));
 
-  if ((RCC->CR & RCC_CR_HSERDY) != RESET)
-  {
-    HSEStatus = (uint32_t)0x01;
-  }
-  else
-  {
-    HSEStatus = (uint32_t)0x00;
-  }
-
-  if (HSEStatus == (uint32_t)0x01)
-  {
     /* Select regulator voltage output Scale 1 mode */
     RCC->APB1ENR |= RCC_APB1ENR_PWREN;
     PWR->CR |= PWR_CR_VOS;
@@ -526,7 +510,7 @@ static void SetSysClock(void)
    
     /* Configure the main PLL */
     RCC->PLLCFGR = PLL_M | (PLL_N << 6) | (((PLL_P >> 1) -1) << 16) |
-                   (RCC_PLLCFGR_PLLSRC_HSE) | (PLL_Q << 24);
+                   (RCC_PLLCFGR_PLLSRC_HSI) | (PLL_Q << 24);
 
     /* Enable the main PLL */
     RCC->CR |= RCC_CR_PLLON;
@@ -568,11 +552,6 @@ static void SetSysClock(void)
     while ((RCC->CFGR & (uint32_t)RCC_CFGR_SWS ) != RCC_CFGR_SWS_PLL);
     {
     }
-  }
-  else
-  { /* If HSE fails to start-up, the application will have wrong clock
-         configuration. User can add here some code to deal with this error */
-  }
 
 }
 
