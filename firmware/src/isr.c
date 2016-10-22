@@ -7,6 +7,13 @@
 
 #include "stm32f4xx_conf.h"
 #include "uart.h"
+#include "tick.h"
+
+
+void SysTick_Handler()
+{
+	Tick_update();
+}
 
 void DMA1_Stream3_IRQHandler()
 {
