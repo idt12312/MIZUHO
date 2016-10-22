@@ -26,8 +26,8 @@
 #define ENC2_PORT_RCC_ENABLE()		RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE)
 #define ENC2_A_PIN					GPIO_Pin_6
 #define ENC2_B_PIN					GPIO_Pin_7
-#define ENC2_A_PIN_AF_CONFIG()		GPIO_PinAFConfig(ENC1_PORT, GPIO_PinSource6, GPIO_AF_TIM8)
-#define ENC2_B_PIN_AF_CONFIG()		GPIO_PinAFConfig(ENC1_PORT, GPIO_PinSource7, GPIO_AF_TIM8)
+#define ENC2_A_PIN_AF_CONFIG()		GPIO_PinAFConfig(ENC2_PORT, GPIO_PinSource6, GPIO_AF_TIM8)
+#define ENC2_B_PIN_AF_CONFIG()		GPIO_PinAFConfig(ENC2_PORT, GPIO_PinSource7, GPIO_AF_TIM8)
 
 
 void Enc_init()
@@ -96,6 +96,7 @@ void Enc_read(int32_t enc_value[2])
 	if (enc1_cnt > 32767) enc_value[0] = (int16_t)enc1_cnt;
 	else enc_value[0] = enc1_cnt;
 
-	if (enc2_cnt > 32767) enc_value[0] = (int16_t)enc2_cnt;
-	else enc_value[0] = enc2_cnt;
+	// 右タイヤは正転逆転が逆になる
+	if (enc2_cnt > 32767) enc_value[1] = -(int16_t)enc2_cnt;
+	else enc_value[1] = -enc2_cnt;
 }
