@@ -8,6 +8,7 @@
 #include <math.h>
 #include "stm32f4xx_conf.h"
 #include "mpu6500.h"
+#include "tick.h"
 
 #define SPI_DEICE				SPI1
 #define SPI_RCC_ENABLE()		RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE)
@@ -119,6 +120,8 @@ static void spi_init()
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(SPI_CS_PORT, &GPIO_InitStructure);
 
+	GPIO_SetBits(SPI_CS_PORT, SPI_CS_PIN);
+
 
 	SPI_RCC_ENABLE();
 
@@ -171,7 +174,7 @@ static void spi_read_reg(uint8_t reg_addr, uint8_t *buffer, size_t size)
 	spi_cs_assert();
 
 	// アドレスはreadに指定
-	spi_xchg(reg_addr | 0x10);
+	spi_xchg(reg_addr | 0x80);
 	for (int i=0;i<size;i++) {
 		buffer[i] = spi_xchg(0x00);
 	}
@@ -182,6 +185,12 @@ static void spi_read_reg(uint8_t reg_addr, uint8_t *buffer, size_t size)
 void MPU6500_init()
 {
 	spi_init();
+
+
+	// リセット
+	spi_write_reg(MPU6500_RA_PWR_MGMT_1, 0x80);
+	Tick_wait(500);
+
 
 	// MPU6500のデバイスIDをチェック
 	uint8_t device_id;
@@ -210,7 +219,7 @@ float MPU6500_read_gyro_z()
 {
 	uint8_t buf[2];
 	spi_read_reg(MPU6500_RA_GYRO_ZOUT_H, buf, 2);
-	const uint16_t gyro_z = ((uint16_t)buf[0] << 8) | ((uint16_t)buf[1]);
+	const int16_t gyro_z = (int16_t)(((uint16_t)buf[0] << 8) | ((uint16_t)buf[1]));
 
 	// /GYRO_FACTORで[deg/s]
 	// /180*PIで[rad/s]
