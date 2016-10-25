@@ -95,6 +95,8 @@ void Motor_init()
 
 void Motor_set(const float duty[2])
 {
+
+	// dutyの絶対値をMOTOR_DUTY_SATURATION以内に収める
 	float duty_sat[2];
 	for (int i=0;i<2;i++) {
 		if (duty[i] > MOTOR_DUTY_SATURATION) duty_sat[i] = MOTOR_DUTY_SATURATION;
@@ -119,12 +121,13 @@ void Motor_set(const float duty[2])
 	}
 
 
+	// 右タイヤは正転逆転が逆になる
 	if (duty_sat[1] >= 0) {
-		MOTOR_TIM_DEVICE->MOTOR2_IN1_CCR = (uint32_t)((float)MOTOR_TIM_PERIAD * duty_sat[1]);
-		MOTOR_TIM_DEVICE->MOTOR2_IN2_CCR = 0;
+		MOTOR_TIM_DEVICE->MOTOR2_IN1_CCR = 0;
+		MOTOR_TIM_DEVICE->MOTOR2_IN2_CCR = (uint32_t)((float)MOTOR_TIM_PERIAD * duty_sat[1]);
 	}
 	else {
-		MOTOR_TIM_DEVICE->MOTOR2_IN1_CCR = 0;
-		MOTOR_TIM_DEVICE->MOTOR2_IN2_CCR = (uint32_t)((float)MOTOR_TIM_PERIAD * (-duty_sat[1]));
+		MOTOR_TIM_DEVICE->MOTOR2_IN1_CCR = (uint32_t)((float)MOTOR_TIM_PERIAD * (-duty_sat[1]));
+		MOTOR_TIM_DEVICE->MOTOR2_IN2_CCR = 0;
 	}
 }
