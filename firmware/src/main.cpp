@@ -1,6 +1,9 @@
 #include "stm32f4xx.h"
 #include <stdio.h>
 
+#include "FreeRTOS.h"
+#include "task.h"
+
 #include "uart.h"
 #include "enc.h"
 #include "motor.h"
@@ -10,6 +13,36 @@
 #include "motor.h"
 #include "led_button.h"
 #include "battery_monitor.h"
+
+
+extern "C" {
+void vApplicationStackOverflowHook( TaskHandle_t xTask, char *pcTaskName );
+void vApplicationMallocFailedHook();
+void vApplicationIdleHook();
+void vApplicationTickHook();
+}
+
+
+void vApplicationStackOverflowHook( TaskHandle_t xTask, char *pcTaskName )
+{
+	printf("\n[ERROR] Stack Overflow %s\n", pcTaskName);
+	while(1);
+}
+
+void vApplicationMallocFailedHook()
+{
+	printf("\n[ERROR] Malloc Failed\n");
+}
+
+void vApplicationIdleHook()
+{
+
+}
+
+void vApplicationTickHook()
+{
+	Tick_update();
+}
 
 
 static void test_led()
@@ -121,7 +154,6 @@ static void irsensor_dump()
 
 static void peripheral_init()
 {
-	Tick_init();
 	Led_init();
 	Button_init();
 	Uart_init();
@@ -140,11 +172,26 @@ static void peripheral_init()
 }
 
 
+void led_blink_task(void*)
+{
+	TickType_t last_wake_tick = xTaskGetTickCount();
+
+	while (1)  {
+		vTaskDelayUntil(&last_wake_tick, 1000);
+		last_wake_tick = xTaskGetTickCount();
+
+		Led_toggle(LED_5);
+	}
+}
+
 int main()
 {
 	peripheral_init();
 	printf("peripheral initialization is completed\n");
 
+	xTaskCreate(led_blink_task, "LED Blink Task", 64, NULL, 1, NULL);
+
+	vTaskStartScheduler();
 
 	while (1);
 }

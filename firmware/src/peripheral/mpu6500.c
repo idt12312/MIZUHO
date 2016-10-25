@@ -8,7 +8,6 @@
 #include <math.h>
 #include "stm32f4xx_conf.h"
 #include "mpu6500.h"
-#include "tick.h"
 
 #define SPI_DEICE				SPI1
 #define SPI_RCC_ENABLE()		RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE)
@@ -189,8 +188,7 @@ void MPU6500_init()
 
 	// リセット
 	spi_write_reg(MPU6500_RA_PWR_MGMT_1, 0x80);
-	Tick_wait(500);
-
+	for (volatile int i=0;i<100000;i++);
 
 	// MPU6500のデバイスIDをチェック
 	uint8_t device_id;
