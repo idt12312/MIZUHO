@@ -7,8 +7,6 @@
 
 #include "stm32f4xx_conf.h"
 #include "irsensor.h"
-#include "uart.h"
-#include "tick.h"
 
 // 赤外線LEDを駆動するPWMの周波数
 // 10kHz = 42MHz / 4200

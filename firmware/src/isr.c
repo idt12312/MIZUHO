@@ -11,11 +11,6 @@
 #include "tick.h"
 
 
-void SysTick_Handler()
-{
-	Tick_update();
-}
-
 
 void DMA1_Stream3_IRQHandler()
 {
