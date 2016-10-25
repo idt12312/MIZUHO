@@ -30,7 +30,7 @@
 // BKPT to communicate with the host. Attempts to run them standalone or
 // without semihosting enabled will usually be terminated with hardware faults.
 
-#define INCLUDE_TRACE_ITM
+//#define INCLUDE_TRACE_ITM
 //#define INCLUDE_TRACE_SEMIHOSTING_STDOUT
 //#define INCLUDE_TRACE_SEMIHOSTING_DEBUG
 

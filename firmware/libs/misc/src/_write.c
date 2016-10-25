@@ -4,6 +4,7 @@
 //
 
 #include "trace_impl.h"
+#include "uart.h"
 
 // The standard write() system call, after a long way inside newlib,
 // finally calls this implementation function.
@@ -24,7 +25,8 @@ _write(int fd, char* ptr, int len)
   if (fd == 1)
     {
 #if defined(DEBUG)
-
+	  return Uart_write((const uint8_t*)ptr, len);
+/*
 #if defined(INCLUDE_TRACE_ITM)
       return _write_trace_itm(ptr, len);
 #elif defined(INCLUDE_TRACE_SEMIHOSTING_STDOUT)
@@ -34,7 +36,7 @@ _write(int fd, char* ptr, int len)
 #else
 #warning "no trace implementation"
 #endif
-
+*/
 #endif // DEBUG
     }
   return -1;
