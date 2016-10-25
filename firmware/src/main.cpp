@@ -1,199 +1,150 @@
 #include "stm32f4xx.h"
 #include <stdio.h>
 
-/*
- * STM32F4 led blink sample (retargetted to SWO).
- *
- * In debug configurations, demonstrate how to print a greeting message
- * on the standard output. In release configurations the message is
- * simply discarded. By default the trace messages are forwarded to the SWO,
- * but can be rerouted to semihosting or completely suppressed by changing
- * the definitions in misc/include/trace_impl.h.
- *
- * Then demonstrates how to blink a led with 1Hz, using a
- * continuous loop and SysTick delays.
- *
- * On DEBUG, the uptime in seconds is also displayed on the standard output.
- *
- * The external clock frequency is specified as a preprocessor definition
- * passed to the compiler via a command line option (see the 'C/C++ General' ->
- * 'Paths and Symbols' -> the 'Symbols' tab, if you want to change it).
- * The value selected during project creation was HSE_VALUE=8000000.
- *
- * Note1: The default clock settings assume that the HSE_VALUE is a multiple
- * of 1MHz, and try to reach the maximum speed available for the
- * board. It does NOT guarantee that the required USB clock of 48MHz is
- * available. If you need this, please update the settings of PLL_M, PLL_N,
- * PLL_P, PLL_Q in libs/CMSIS/src/system_stm32f4xx.c to match your needs.
- *
- * Note2: The external memory controllers are not enabled. If needed, you
- * have to define DATA_IN_ExtSRAM or DATA_IN_ExtSDRAM and to configure
- * the memory banks in libs/CMSIS/src/system_stm32f4xx.c to match your needs.
- *
- * The build does not use startup files, and on Release it does not even use
- * any standard library function (on Debug the printf() brings lots of
- * functions; removing it should also use no other standard lib functions).
- *
- * If the application requires special initialisation code present
- * in some other libraries (for example librdimon.a, for semihosting),
- * define USE_STARTUP_FILES and uncheck the corresponding option in the
- * linker configuration.
- *
- */
+#include "uart.h"
+#include "enc.h"
+#include "motor.h"
+#include "mpu6500.h"
+#include "irsensor.h"
+#include "tick.h"
+#include "motor.h"
+#include "led_button.h"
+#include "battery_monitor.h"
 
-// ----------------------------------------------------------------------------
 
-static void
-Delay(__IO uint32_t nTime);
-
-static void
-TimingDelay_Decrement(void);
-
-extern "C" {
-void
-SysTick_Handler(void);
-}
-
-/* ----- SysTick definitions ----------------------------------------------- */
-
-#define SYSTICK_FREQUENCY_HZ       1000
-
-/* ----- LED definitions --------------------------------------------------- */
-
-/* Adjust them for your own board. */
-
-#if defined(BOARD_OLIMEX_STM32_E407)
-
-/* STM32-E407 definitions (the GREEN LED) */
-
-#define BLINK_PORT      GPIOC
-#define BLINK_PIN       13
-#define BLINK_RCC_BIT   RCC_AHB1Periph_GPIOC
-
-#else
-
-/* STM32F4DISCOVERY definitions (the GREEN LED) */
-
-#define BLINK_PORT      GPIOD
-#define BLINK_PIN       12
-#define BLINK_RCC_BIT   RCC_AHB1Periph_GPIOD
-
-#endif
-
-#define BLINK_TICKS     SYSTICK_FREQUENCY_HZ/2
-
-// ----------------------------------------------------------------------------
-
-int
-main(void)
+static void test_led()
 {
-#if defined(DEBUG)
-  /*
-   * Send a greeting to the standard output (the semihosting debug channel
-   * on Debug, ignored on Release).
-   */
-  printf("Hello ARM World!\n");
-#endif
-
-  /*
-   * At this stage the microcontroller clock setting is already configured,
-   * this is done through SystemInit() function which is called from startup
-   * files (startup_cm.c) before to branch to the
-   * application main. To reconfigure the default setting of SystemInit()
-   * function, refer to system_stm32f4xx.c file.
-   */
-
-  RCC_ClocksTypeDef RCC_Clocks;
-
-  /* Use SysTick as reference for the timer */
-  RCC_GetClocksFreq(&RCC_Clocks);
-  SysTick_Config(RCC_Clocks.HCLK_Frequency / SYSTICK_FREQUENCY_HZ);
-
-  /* GPIO Periph clock enable */
-  RCC_AHB1PeriphClockCmd(BLINK_RCC_BIT, ENABLE);
-
-  GPIO_InitTypeDef GPIO_InitStructure;
-
-  /* Configure pin in output push/pull mode */
-  GPIO_InitStructure.GPIO_Pin = (1 << BLINK_PIN);
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
-  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-  GPIO_Init(BLINK_PORT, &GPIO_InitStructure);
-
-  int seconds = 0;
-
-  /* Infinite loop */
-  while (1)
-    {
-      /* Assume the LED is active low */
-
-      /* Turn on led by setting the pin low */
-      GPIO_ResetBits(BLINK_PORT, (1 << BLINK_PIN));
-
-      Delay(BLINK_TICKS);
-
-      /* Turn off led by setting the pin high */
-      GPIO_SetBits(BLINK_PORT, (1 << BLINK_PIN));
-
-      Delay(BLINK_TICKS);
-
-      ++seconds;
-
-#if defined(DEBUG)
-      /*
-       * Count seconds on the debug channel.
-       */
-      printf("Second %d\n", seconds);
-#endif
-    }
+	while (1) {
+		for (int i=0;i<5;i++) {
+			Led_on(1<<i);
+			Tick_wait(500);
+		}
+		for (int i=0;i<5;i++) {
+			Led_off(1<<i);
+			Tick_wait(500);
+		}
+		for (int i=0;i<5;i++) {
+			Led_toggle(1<<i);
+			Tick_wait(500);
+			Led_toggle(1<<i);
+			Tick_wait(500);
+		}
+	}
 }
 
-// ----------------------------------------------------------------------------
 
-static __IO uint32_t uwTimingDelay;
-
-/**
- * @brief  Inserts a delay time.
- * @param  nTime: specifies the delay time length, in SysTick ticks.
- * @retval None
- */
-void
-Delay(__IO uint32_t nTime)
+static void test_button()
 {
-  uwTimingDelay = nTime;
-
-  while (uwTimingDelay != 0)
-    ;
+	while (1) {
+		Tick_wait(200);
+		printf("L:%d R:%d\n", ButtonL_get(), ButtonR_get());
+	}
 }
 
-/**
- * @brief  Decrements the TimingDelay variable.
- * @param  None
- * @retval None
- */
-void
-TimingDelay_Decrement(void)
+
+static void test_gyro()
 {
-  if (uwTimingDelay != 0x00)
-    {
-      uwTimingDelay--;
-    }
+	int cnt=0;
+	float angle=0;
+
+	while (1) {
+		Tick_wait(10);
+		float omega = MPU6500_read_gyro_z();
+		angle += omega * 0.01;
+		cnt++;
+		if (cnt > 10) {
+			cnt = 0;
+			printf("%f %f\n", omega/3.1415*180, angle/3.1415*180);
+		}
+	}
 }
 
-// ----------------------------------------------------------------------------
 
-/**
- * @brief  This function is the SysTick Handler.
- * @param  None
- * @retval None
- */
-void
-SysTick_Handler(void)
+static void test_motor()
 {
-  TimingDelay_Decrement();
+	float duty[2];
+	while (1) {
+		duty[0] = duty[1] = 0.0f;
+		if (ButtonL_get()) duty[0] = 0.2;
+		if (ButtonR_get()) duty[1] = 0.2;
+		Motor_set(duty);
+		Tick_wait(10);
+	}
 }
 
-// ----------------------------------------------------------------------------
 
+static void test_enc()
+{
+	int32_t enc_sum[2] = {0};
+
+	while (1) {
+		Tick_wait(200);
+
+		int32_t enc[2];
+		Enc_read(enc);
+		enc_sum[0] += enc[0];
+		enc_sum[1] += enc[1];
+
+		printf("%6d %6d %6d %6d\n", enc[0], enc[1], enc_sum[0], enc_sum[1]);
+	}
+}
+
+
+static void test_battery_monitor()
+{
+	while (1) {
+		float batt_valtage = (float)BatteryMonitor_read() / 4096.0 * 3.3 * 3;
+		printf("%f\n", batt_valtage);
+		Tick_wait(300);
+	}
+}
+
+static void irsensor_dump()
+{
+	SensorRawData raw;
+	IrSensor_start();
+	while (IrSensor_busy());
+	IrSensor_get(&raw);
+
+	for (size_t i=0;i<raw.size;i++) {
+		printf("%4u %4u %4u %4u\n",
+				SENSOR1(raw, i),
+				SENSOR2(raw, i),
+				SENSOR3(raw, i),
+				SENSOR4(raw, i));
+		Tick_wait(20);
+		float batt_valtage = (float)BatteryMonitor_read() / 4096.0 * 3.3 * 3;
+		printf("%f\n", batt_valtage);
+	}
+}
+
+
+static void peripheral_init()
+{
+	Tick_init();
+	Led_init();
+	Button_init();
+	Uart_init();
+	Enc_init();
+	MPU6500_init();
+	BatteryMonitor_init();
+
+	// TODO:irsensro -> motorの順に初期化しないとmotorが動かなくなる
+	IrSensor_init();
+	Motor_init();
+
+	// デバッガによって処理が停止したとき
+	// モータのタイマとADCのトリガとなるタイマを停止する
+	DBGMCU_APB1PeriphConfig(DBGMCU_TIM1_STOP, ENABLE);
+	DBGMCU_APB1PeriphConfig(DBGMCU_TIM2_STOP, ENABLE);
+}
+
+
+int main()
+{
+	peripheral_init();
+	printf("peripheral initialization is completed\n");
+
+
+	while (1);
+}
