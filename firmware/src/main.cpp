@@ -174,6 +174,7 @@ static void peripheral_init()
 
 	// デバッガによって処理が停止したとき
 	// モータのタイマ, ADCのトリガとなるタイマ, LEDのPWM用タイマを停止する
+	DBGMCU_Config(DBGMCU_STOP, ENABLE);
 	DBGMCU_APB1PeriphConfig(DBGMCU_TIM1_STOP, ENABLE);
 	DBGMCU_APB1PeriphConfig(DBGMCU_TIM2_STOP, ENABLE);
 	DBGMCU_APB2PeriphConfig(DBGMCU_TIM3_STOP, ENABLE);

@@ -31,6 +31,8 @@
 // ADCトリガ用タイマの周期
 #define ADC_TRIG_TIM_PERIOD IRSENSOR_PWM_TIM_PERIAD/N_MUL
 
+// DMAの割り込み優先度
+#define ADC_DMA_IRQ_PRIORITY	8
 
 typedef enum {
 	SENSOR13,
@@ -243,8 +245,8 @@ static void adc_init()
 
 	NVIC_InitTypeDef NVIC_InitStructure;
 	NVIC_InitStructure.NVIC_IRQChannel = DMA2_Stream0_IRQn;
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 10;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 10;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = ADC_DMA_IRQ_PRIORITY;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
 }
