@@ -9,8 +9,8 @@
 #include "irsensor.h"
 
 // 赤外線LEDを駆動するPWMの周波数
-// 10kHz = 42MHz / 4200
-#define IRSENSOR_PWM_TIM_PERIAD 4200
+// 10kHz = 84MHz / 8400
+#define IRSENSOR_PWM_TIM_PERIAD 8400
 
 #define IRSENSOR_PWM_DUTY 0.5f
 
@@ -62,6 +62,14 @@ static void pwm_init()
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
+	// DACのピンは入力にしとく
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_4 | GPIO_Pin_5;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_TIM3);
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource7, GPIO_AF_TIM3);
 
@@ -69,7 +77,6 @@ static void pwm_init()
 	// PWMを出すTIMを設定
 	// TimeBaseではPWMの周期を設定
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
-	DBGMCU_APB2PeriphConfig(DBGMCU_TIM3_STOP, ENABLE);
 
 	TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
 	TIM_TimeBaseStructure.TIM_Period = IRSENSOR_PWM_TIM_PERIAD - 1;
@@ -83,7 +90,7 @@ static void pwm_init()
 	// ここでは共に出力0に設定
 	// pwm_startでPWMモードに設定をしている
 	TIM_OCInitTypeDef  TIM_OCInitStructure;
-	TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_Inactive;
+	TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
 	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
 	TIM_OCInitStructure.TIM_OutputNState = TIM_OutputNState_Disable;
 	TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
@@ -100,27 +107,13 @@ static void pwm_init()
 
 static void pwm_start(Sensor sensor)
 {
-	// PWMモードに設定
-	TIM_OCInitTypeDef  TIM_OCInitStructure;
-	TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
-	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
-	TIM_OCInitStructure.TIM_OutputNState = TIM_OutputNState_Disable;
-	TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
-	TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Reset;
-
 	if (sensor == SENSOR13) {
-		TIM_OCInitStructure.TIM_Pulse = (uint16_t)(IRSENSOR_PWM_TIM_PERIAD * IRSENSOR_PWM_DUTY);
-		TIM_OC1Init(TIM3, &TIM_OCInitStructure);
-
-		// PWMモードのままduty=0にすると実際に0になるまで時間がかかるので
-		// ForcedActionを使って0にする
-		TIM_SelectOCxM(TIM3, TIM_Channel_2, TIM_ForcedAction_InActive);
+		TIM3->CCR1 = (uint16_t)(IRSENSOR_PWM_TIM_PERIAD * IRSENSOR_PWM_DUTY);
+		TIM3->CCR2 = 0;
 	}
 	else {
-		TIM_SelectOCxM(TIM3, TIM_Channel_2, TIM_ForcedAction_InActive);
-
-		TIM_OCInitStructure.TIM_Pulse = (uint16_t)(IRSENSOR_PWM_TIM_PERIAD * IRSENSOR_PWM_DUTY);
-		TIM_OC2Init(TIM3, &TIM_OCInitStructure);
+		TIM3->CCR1 = 0;
+		TIM3->CCR2 = (uint16_t)(IRSENSOR_PWM_TIM_PERIAD * IRSENSOR_PWM_DUTY);
 	}
 
 	// PWM出力開始
@@ -131,8 +124,8 @@ static void pwm_start(Sensor sensor)
 
 static void pwm_stop()
 {
-	TIM_SelectOCxM(TIM3, TIM_Channel_1, TIM_ForcedAction_InActive);
-	TIM_SelectOCxM(TIM3, TIM_Channel_2, TIM_ForcedAction_InActive);
+	TIM3->CCR1 = 0;
+	TIM3->CCR2 = 0;
 	TIM_Cmd(TIM3, DISABLE);
 }
 
@@ -326,6 +319,7 @@ void IrSensor_get(SensorRawData *raw_data)
 
 void IrSensor_adc_dma_half_complete_isr()
 {
+	pwm_start(SENSOR24);
 	adc_start(SENSOR24);
 	measuring_sensor = SENSOR24;
 }
