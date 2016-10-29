@@ -14,6 +14,7 @@
 #include "led_button.h"
 #include "battery_monitor.h"
 
+#include "QuadratureDemodulator.h"
 
 extern "C" {
 void vApplicationStackOverflowHook( TaskHandle_t xTask, char *pcTaskName );
@@ -167,9 +168,10 @@ static void peripheral_init()
 	Motor_init();
 
 	// デバッガによって処理が停止したとき
-	// モータのタイマとADCのトリガとなるタイマを停止する
+	// モータのタイマ, ADCのトリガとなるタイマ, LEDのPWM用タイマを停止する
 	DBGMCU_APB1PeriphConfig(DBGMCU_TIM1_STOP, ENABLE);
 	DBGMCU_APB1PeriphConfig(DBGMCU_TIM2_STOP, ENABLE);
+	DBGMCU_APB2PeriphConfig(DBGMCU_TIM3_STOP, ENABLE);
 }
 
 
@@ -185,12 +187,34 @@ void led_blink_task(void*)
 	}
 }
 
+void test_demodulator(void*)
+{
+	TickType_t last_wake_tick = xTaskGetTickCount();
+	SensorRawData raw;
+	QuadratureDemodulator demodulator(64,4);
+	uint32_t result[4];
+
+	while (1) {
+		vTaskDelayUntil(&last_wake_tick, 250);
+		last_wake_tick = xTaskGetTickCount();
+
+		IrSensor_start();
+		while (IrSensor_busy());
+		IrSensor_get(&raw);
+
+		demodulator.calc(&raw, result);
+		printf("%u %u %u %u\n", result[0], result[1], result[2], result[3]);
+	}
+
+}
+
 int main()
 {
 	peripheral_init();
 	printf("peripheral initialization is completed\n");
 
-	xTaskCreate(led_blink_task, "LED Blink Task", 64, NULL, 1, NULL);
+	xTaskCreate(led_blink_task, "led blink", 128, NULL, 1, NULL);
+	xTaskCreate(test_demodulator, "irsensor", 512, NULL, 1, NULL);
 
 	vTaskStartScheduler();
 
