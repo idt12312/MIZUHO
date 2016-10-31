@@ -93,6 +93,9 @@
 // ジャイロのゲインがフルスケールで250dpsの時の値
 #define GYRO_FACTOR  131.0f
 
+#define GYRO_OFFSET_CNT 100
+
+static float gyro_z_offset = 0.0;
 
 static void spi_init()
 {
@@ -209,9 +212,8 @@ void MPU6500_init()
 	// FCHOICE_B = b00 : Band=8600Hz, Delay=0.064ms, Fs=32kHz
 	spi_write_reg(MPU6500_RA_GYRO_CONFIG, 0x00);
 
-	// TODO:オフセットを計算
-
 }
+
 
 float MPU6500_read_gyro_z()
 {
@@ -223,6 +225,15 @@ float MPU6500_read_gyro_z()
 	// /180*PIで[rad/s]
 	const float omega = (float)gyro_z / GYRO_FACTOR / 180.0f * M_PI;
 
-	return omega;
+	return omega - gyro_z_offset;
 }
 
+
+void MPU6500_calib_offset()
+{
+	float sum = 0.0;
+	for (int i=0;i<GYRO_OFFSET_CNT;i++) {
+		sum += MPU6500_read_gyro_z();
+	}
+	gyro_z_offset = sum / GYRO_OFFSET_CNT;
+}
