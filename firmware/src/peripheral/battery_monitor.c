@@ -25,12 +25,12 @@ void BatteryMonitor_init()
 	ADC_InitTypeDef  ADC_InitStructure;
 	ADC_InitStructure.ADC_Resolution = ADC_Resolution_12b;
 	ADC_InitStructure.ADC_ScanConvMode = DISABLE;
-	ADC_InitStructure.ADC_ContinuousConvMode = ENABLE;
+	ADC_InitStructure.ADC_ContinuousConvMode = DISABLE;
 	ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right;
 	ADC_InitStructure.ADC_NbrOfConversion = 1;
 	ADC_Init(ADC3, &ADC_InitStructure);
 
-	ADC_RegularChannelConfig(ADC3, ADC_Channel_10, 1, ADC_SampleTime_480Cycles);
+	ADC_RegularChannelConfig(ADC3, ADC_Channel_10, 1, ADC_SampleTime_15Cycles);
 
 	ADC_Cmd(ADC3, ENABLE);
 
@@ -40,5 +40,7 @@ void BatteryMonitor_init()
 
 uint16_t BatteryMonitor_read()
 {
+	ADC_SoftwareStartConv(ADC3);
+	while (ADC_GetFlagStatus(ADC3, ADC_FLAG_EOC) == RESET);
 	return ADC_GetConversionValue(ADC3);
 }

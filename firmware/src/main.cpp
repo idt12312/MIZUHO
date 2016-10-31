@@ -14,6 +14,7 @@
 #include "motor.h"
 #include "led_button.h"
 #include "battery_monitor.h"
+#include "tasks.h"
 
 #include "QuadratureDemodulator.h"
 
@@ -209,7 +210,7 @@ void test_demodulator(void*)
 		IrSensor_get(&raw);
 
 		demodulator.calc(&raw, result);
-		printf("%u %u %u %u\n", result[0], result[1], result[2], result[3]);
+		//printf("%u %u %u %u\n", result[0], result[1], result[2], result[3]);
 	}
 
 }
@@ -235,8 +236,8 @@ int main()
 	printf("peripheral initialization is completed\n");
 
 	xTaskCreate(led_blink_task, "led blink", 128, NULL, 1, NULL);
-	xTaskCreate(gyro_test_task, "gyro test", 1024, NULL, 1, NULL);
-	//xTaskCreate(test_demodulator, "irsensor", 512, NULL, 1, NULL);
+	xTaskCreate(test_demodulator, "irsensor", 512, NULL, 1, NULL);
+	xTaskCreate(battery_monitor_task, "batt monitor", 256, NULL, 1, NULL);
 
 	vTaskStartScheduler();
 
