@@ -8,8 +8,7 @@
 #include "stm32f4xx_conf.h"
 #include "uart.h"
 #include "irsensor.h"
-#include "tick.h"
-
+#include "spi.h"
 
 
 void DMA1_Stream3_IRQHandler()
@@ -31,3 +30,9 @@ void DMA2_Stream0_IRQHandler()
 	}
 }
 
+
+void DMA2_Stream2_IRQHandler()
+{
+	Spi_dma_complete_isr();
+	DMA_ClearITPendingBit(DMA2_Stream2, DMA_IT_TCIF2);
+}

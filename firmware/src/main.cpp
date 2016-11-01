@@ -7,6 +7,7 @@
 #include "uart.h"
 #include "enc.h"
 #include "motor.h"
+#include "spi.h"
 #include "mpu6500.h"
 #include "irsensor.h"
 #include "tick.h"
@@ -156,10 +157,14 @@ static void irsensor_dump()
 
 static void peripheral_init()
 {
+	// 割り込み優先度をpre-emption priorityに4bit割り当てる
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
+
 	Led_init();
 	Button_init();
 	Uart_init();
 	Enc_init();
+	Spi_init();
 	MPU6500_init();
 	BatteryMonitor_init();
 
@@ -208,13 +213,29 @@ void test_demodulator(void*)
 
 }
 
+
+void gyro_test_task(void*)
+{
+	TickType_t last_wake_tick = xTaskGetTickCount();
+
+	while (1)  {
+		vTaskDelayUntil(&last_wake_tick, 200);
+		last_wake_tick = xTaskGetTickCount();
+
+		float gyro = MPU6500_read_gyro_z();
+		printf("gyro : %d\n", (int16_t)(gyro*1000));
+	}
+}
+
+
 int main()
 {
 	peripheral_init();
 	printf("peripheral initialization is completed\n");
 
 	xTaskCreate(led_blink_task, "led blink", 128, NULL, 1, NULL);
-	xTaskCreate(test_demodulator, "irsensor", 512, NULL, 1, NULL);
+	xTaskCreate(gyro_test_task, "gyro test", 1024, NULL, 1, NULL);
+	//xTaskCreate(test_demodulator, "irsensor", 512, NULL, 1, NULL);
 
 	vTaskStartScheduler();
 
