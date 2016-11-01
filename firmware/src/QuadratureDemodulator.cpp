@@ -5,29 +5,19 @@
  *      Author: idt12312
  */
 
-#include <QuadratureDemodulator.h>
+#include "QuadratureDemodulator.h"
 #include <cmath>
 #include <cstdio>
 #include "stm32f4xx.h"
 #include "arm_math.h"
 
-QuadratureDemodulator::QuadratureDemodulator(size_t _N, size_t _n)
-	: N(_N), n(_n), m(_N/_n)
+QuadratureDemodulator::QuadratureDemodulator(size_t __N, size_t _n)
+	: N(__N), n(_n), m(__N/_n), Wc(new int16_t[__N/_n]), Ws(new int16_t[__N/_n])
 {
-	Wc = new int16_t[m];
-	Ws = new int16_t[n];
-
 	for (size_t i=0;i<m;i++) {
 		Wc[i] = (int16_t)(std::cos(-2.0f*M_PI/m*i)* (float)(1<<sin_scale));
 		Ws[i] = (int16_t)(std::sin(-2.0f*M_PI/m*i)* (float)(1<<sin_scale));
 	}
-}
-
-
-QuadratureDemodulator::~QuadratureDemodulator()
-{
-	delete[] Wc;
-	delete[] Ws;
 }
 
 
@@ -58,7 +48,7 @@ uint32_t QuadratureDemodulator::calc(const int16_t *x)
 }
 
 
-void QuadratureDemodulator::calc(const SensorRawData *raw_data, uint32_t result[4])
+QuadratureDemodulator::Result QuadratureDemodulator::calc(const SensorRawData *raw_data)
 {
 	int32_t Xim[4] = {0};
 	int32_t Xre[4] = {0};
@@ -89,6 +79,7 @@ void QuadratureDemodulator::calc(const SensorRawData *raw_data, uint32_t result[
 		Xim[3] += Ws[i]*x4sum;
 	}
 
+	uint32_t result[4];
 	for (int i=0;i<4;i++) {
 		// sin cosをスケーリングしていたので、その分を戻す
 		Xre[i] = Xre[i] >> sin_scale;
@@ -102,4 +93,6 @@ void QuadratureDemodulator::calc(const SensorRawData *raw_data, uint32_t result[
 
 		result[i] = (uint32_t)std::sqrt(X_square/N);
 	}
+
+	return Result(result[0],result[1],result[2],result[3]);
 }

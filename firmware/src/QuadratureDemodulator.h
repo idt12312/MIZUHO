@@ -10,6 +10,7 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <memory>
 #include "irsensor.h"
 
 class QuadratureDemodulator {
@@ -19,16 +20,25 @@ private:
 	const size_t N;
 	const size_t n;
 	const size_t m;
-	int16_t *Wc;
-	int16_t *Ws;
+	std::unique_ptr<int16_t[]> Wc;
+	std::unique_ptr<int16_t[]> Ws;
 
 public:
 	// Nがnの整数倍になる必要がある
-	QuadratureDemodulator(size_t _N, size_t _n);
-	virtual ~QuadratureDemodulator();
+	QuadratureDemodulator(size_t __N, size_t _n);
+	virtual ~QuadratureDemodulator() {}
+
+	struct Result {
+		uint32_t sensor1 = 0;
+		uint32_t sensor2 = 0;
+		uint32_t sensor3 = 0;
+		uint32_t sensor4 = 0;
+		Result(uint32_t _s1, uint32_t _s2, uint32_t _s3, uint32_t _s4)
+			:sensor1(_s1), sensor2(_s2), sensor3(_s3), sensor4(_s4) {}
+	};
 
 	uint32_t calc(const int16_t *x);
-	void calc(const SensorRawData *raw_data, uint32_t result[4]);
+	Result calc(const SensorRawData *raw_data);
 };
 
 #endif /* QUADRATUREDEMODULATOR_H_ */
