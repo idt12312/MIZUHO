@@ -14,6 +14,7 @@
 #include "motor.h"
 #include "led_button.h"
 #include "battery_monitor.h"
+#include "tasks.h"
 
 #include "QuadratureDemodulator.h"
 
@@ -174,6 +175,7 @@ static void peripheral_init()
 
 	// デバッガによって処理が停止したとき
 	// モータのタイマ, ADCのトリガとなるタイマ, LEDのPWM用タイマを停止する
+	DBGMCU_Config(DBGMCU_STOP, ENABLE);
 	DBGMCU_APB1PeriphConfig(DBGMCU_TIM1_STOP, ENABLE);
 	DBGMCU_APB1PeriphConfig(DBGMCU_TIM2_STOP, ENABLE);
 	DBGMCU_APB2PeriphConfig(DBGMCU_TIM3_STOP, ENABLE);
@@ -197,7 +199,6 @@ void test_demodulator(void*)
 	TickType_t last_wake_tick = xTaskGetTickCount();
 	SensorRawData raw;
 	QuadratureDemodulator demodulator(64,4);
-	uint32_t result[4];
 
 	while (1) {
 		vTaskDelayUntil(&last_wake_tick, 250);
@@ -207,24 +208,10 @@ void test_demodulator(void*)
 		while (IrSensor_busy());
 		IrSensor_get(&raw);
 
-		demodulator.calc(&raw, result);
-		printf("%u %u %u %u\n", result[0], result[1], result[2], result[3]);
+		QuadratureDemodulator::Result result = demodulator.calc(&raw);
+		//printf("%u %u %u %u\n", result[0], result[1], result[2], result[3]);
 	}
 
-}
-
-
-void gyro_test_task(void*)
-{
-	TickType_t last_wake_tick = xTaskGetTickCount();
-
-	while (1)  {
-		vTaskDelayUntil(&last_wake_tick, 200);
-		last_wake_tick = xTaskGetTickCount();
-
-		float gyro = MPU6500_read_gyro_z();
-		printf("gyro : %d\n", (int16_t)(gyro*1000));
-	}
 }
 
 
@@ -233,9 +220,9 @@ int main()
 	peripheral_init();
 	printf("peripheral initialization is completed\n");
 
+	Tasks_init();
+
 	xTaskCreate(led_blink_task, "led blink", 128, NULL, 1, NULL);
-	xTaskCreate(gyro_test_task, "gyro test", 1024, NULL, 1, NULL);
-	//xTaskCreate(test_demodulator, "irsensor", 512, NULL, 1, NULL);
 
 	vTaskStartScheduler();
 
