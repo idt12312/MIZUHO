@@ -9,7 +9,8 @@
 #define TASKS_H_
 
 
-void battery_monitor_task(void *);
+void Tasks_init();
+
 
 
 #endif /* TASKS_H_ */
