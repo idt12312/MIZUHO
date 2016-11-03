@@ -4,6 +4,8 @@
  *  Created on: 2016/10/31
  *      Author: idt12312
  */
+#include "MotorController.h"
+#include "Geometry.h"
 #include <stdio.h>
 
 #include "stm32f4xx.h"
@@ -19,6 +21,8 @@
 #include "led_button.h"
 #include "uart.h"
 #include "motor.h"
+#include "enc.h"
+#include "mpu6500.h"
 
 #include "config.h"
 
@@ -29,16 +33,22 @@
  * タスク間通信のためのハンドル
  ***********************************************/
 static xQueueHandle wall_info_queue;
+static xQueueHandle motor_ref_queue;
+static xQueueHandle machine_velocity_queue;
 
 static void abort(const char* error_msg);
 static void battery_monitor_task(void *);
 static void wall_detect_task(void *);
+static void motor_control_task(void *);
 static void test_task(void *);
 
+static bool control_enable = false;
 
 void Tasks_init()
 {
 	wall_info_queue = xQueueCreate(1, sizeof(WallDetect::WallInfo));
+	motor_ref_queue = xQueueCreate(1, sizeof(Velocity));
+	machine_velocity_queue = xQueueCreate(1, sizeof(Velocity));
 
 	xTaskCreate(battery_monitor_task, "batt monitor",
 			BATTERY_MONITOR_TASK_STACK_SIZE, NULL,
@@ -48,9 +58,20 @@ void Tasks_init()
 			WALL_DETECT_TASK_STACK_SIZE, NULL,
 			WALL_DETECT_TASK_PRIORITY, NULL);
 
+	static PIDParam pid_param;
+	pid_param.T = 0.001f;
+	pid_param.Kp = 0.8f;
+	pid_param.Ki = 0.01f;
+	pid_param.Kd = 0.0001f;
+	xTaskCreate(motor_control_task, "motor ctrl",
+			MOTOR_CONTROL_TASK_STACK_SIZE, &pid_param,
+			MOTOR_CONTROL_TASK_PRIORITY, NULL);
+
 	xTaskCreate(test_task, "test",
 			256, NULL,
 			1, NULL);
+
+	control_enable = false;
 }
 
 
@@ -96,7 +117,6 @@ void wall_detect_task(void *)
 	QuadratureDemodulator demodulator(64,4);
 	WallDetect wall_detector;
 
-
 	TickType_t last_wake_tick = xTaskGetTickCount();
 	while (1) {
 		vTaskDelayUntil(&last_wake_tick, WALL_DETECT_TASK_PERIOD);
@@ -126,6 +146,45 @@ void wall_detect_task(void *)
 
 
 
+void motor_control_task(void *arg)
+{
+	PIDParam *control_param = (PIDParam*)arg;
+	MotorController motor_controller(*control_param);
+
+	Velocity dummy;
+	xQueueSend(machine_velocity_queue, &dummy, 0);
+
+	TickType_t last_wake_tick = xTaskGetTickCount();
+	while (1) {
+		vTaskDelayUntil(&last_wake_tick, MOTOR_CONTROL_TASK_PERIOD);
+		last_wake_tick = xTaskGetTickCount();
+
+		const float gyro = MPU6500_read_gyro_z();
+
+		EncValue enc_value;
+		Enc_read(&enc_value);
+
+		Velocity ref;
+		if (xQueuePeek(motor_ref_queue, &ref, MOTOR_CONTROL_TASK_PERIOD) == pdFALSE) continue;
+
+		MotorVoltage motor_voltage = motor_controller.update(ref, enc_value, gyro);
+		if (!control_enable) {
+			motor_voltage.left = motor_voltage.right = 0.0f;
+			float duty[2];
+			duty[0] = 0.0;
+			duty[1] = 0.0;
+			Motor_set_duty(duty);
+		}
+		Motor_set_voltage(&motor_voltage);
+
+		const Velocity measured_velocity = motor_controller.get_measured_velocity();
+		//xQueueSend(machine_velocity_queue, &measured_velocity, MOTOR_CONTROL_TASK_PERIOD);
+
+		xQueueOverwrite(machine_velocity_queue, &measured_velocity);
+	}
+}
+
+
 static void abort(const char* error_msg)
 {
 	vTaskSuspendAll();
@@ -143,14 +202,24 @@ static void abort(const char* error_msg)
 
 static void test_task(void *)
 {
-	WallDetect::WallInfo wall_info;
 	TickType_t last_wake_tick = xTaskGetTickCount();
 
+	Velocity motor_ref(0.0f, 3.0f);
+	xQueueOverwrite(motor_ref_queue, &motor_ref);
+
+	Velocity measured;
+
 	while (1) {
-		vTaskDelayUntil(&last_wake_tick, 300);
+		vTaskDelayUntil(&last_wake_tick, 200);
 		last_wake_tick = xTaskGetTickCount();
 
-		xQueuePeek(wall_info_queue, &wall_info, 300);
-		printf("wall info : %d %d %d\n", wall_info.front, wall_info.left, wall_info.right);
+		if (Uart_rcv_size() != 0) {
+			char ch = Uart_read_byte();
+			if (ch == 's') control_enable = true;
+			else control_enable = false;
+
+		}
+		xQueuePeek(machine_velocity_queue, &measured, 0);
+		printf("%d %d\n", (int32_t)(measured.v*1000), (int32_t)(measured.omega*1000));
 	}
 }
