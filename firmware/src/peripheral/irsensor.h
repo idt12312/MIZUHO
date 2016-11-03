@@ -38,6 +38,11 @@ void IrSensor_start();
 bool IrSensor_busy();
 void IrSensor_get(SensorRawData *raw_data);
 
+// FreeRTOSを使う場合、センサの読み取りをブロックして待つための関数
+// 内部でセマフォを使用
+void IrSensor_block(uint32_t delay_time);
+
+
 // DNAの半分転送が終わった割り込みから呼ぶ
 void IrSensor_adc_dma_half_complete_isr();
 // DMAの完全に転送が終わった割り込みから呼ぶ

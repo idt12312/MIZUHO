@@ -8,6 +8,10 @@
 #include "stm32f4xx_conf.h"
 #include "irsensor.h"
 
+#include "FreeRTOS.h"
+#include "semphr.h"
+
+
 // 赤外線LEDを駆動するPWMの周波数
 // 10kHz = 84MHz / 8400
 #define IRSENSOR_PWM_TIM_PERIAD 8400
@@ -32,7 +36,7 @@
 #define ADC_TRIG_TIM_PERIOD IRSENSOR_PWM_TIM_PERIAD/N_MUL
 
 // DMAの割り込み優先度
-#define ADC_DMA_IRQ_PRIORITY	8
+#define ADC_DMA_IRQ_PRIORITY	6
 
 typedef enum {
 	SENSOR13,
@@ -49,6 +53,7 @@ static uint32_t adc_result[2][N_ADC_CNT];
 static bool measuring;
 static Sensor measuring_sensor;
 
+static xSemaphoreHandle data_ready_semaphore;
 
 
 static void pwm_init()
@@ -280,6 +285,8 @@ void IrSensor_init()
 	adc_init();
 
 	measuring = false;
+
+	data_ready_semaphore = xSemaphoreCreateBinary();
 }
 
 
@@ -302,6 +309,10 @@ bool IrSensor_busy()
 	return measuring;
 }
 
+void IrSensor_block(uint32_t delay_time)
+{
+	xSemaphoreTake(data_ready_semaphore, delay_time);
+}
 
 void IrSensor_get(SensorRawData *raw_data)
 {
@@ -332,4 +343,9 @@ void IrSensor_adc_dma_complete_isr()
 	adc_stop();
 	pwm_stop();
 	measuring = false;
+
+	// セマフォをgiveしてコンテキストスイッチ
+	portBASE_TYPE xHigherPriorityTaskWoken;
+	xSemaphoreGiveFromISR(data_ready_semaphore, &xHigherPriorityTaskWoken);
+	portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
 }
