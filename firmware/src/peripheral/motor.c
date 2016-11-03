@@ -6,6 +6,7 @@
  */
 #include "stm32f4xx_conf.h"
 #include "motor.h"
+#include "config.h"
 
 // PWM周波数 = TIMのバスクロック / (MOTOR_TIM_PERIAD * MOTOR_TIM_PRESCALER)
 // ここでは 50kHz = 84MHz(TIM1のあるAPB2) / (1 * 1680)
@@ -93,7 +94,7 @@ void Motor_init()
 }
 
 
-void Motor_set(const float duty[2])
+void Motor_set_duty(const float duty[2])
 {
 
 	// dutyの絶対値をMOTOR_DUTY_SATURATION以内に収める
@@ -130,4 +131,13 @@ void Motor_set(const float duty[2])
 		MOTOR_TIM_DEVICE->MOTOR2_IN1_CCR = (uint32_t)((float)MOTOR_TIM_PERIAD * (-duty_sat[1]));
 		MOTOR_TIM_DEVICE->MOTOR2_IN2_CCR = 0;
 	}
+}
+
+void Motor_set_voltage(const MotorVoltage *volt)
+{
+	float duty[2];
+	duty[0] = volt->left / MOTOR_VOLTAGE;
+	duty[1] = volt->right / MOTOR_VOLTAGE;
+
+	Motor_set_duty(duty);
 }
