@@ -85,7 +85,7 @@ void Enc_init()
 }
 
 
-void Enc_read(int32_t enc_value[2])
+void Enc_read(EncValue *enc_value)
 {
 	uint16_t enc1_cnt = ENC1_TIM_DEVICE->CNT;
 	ENC1_TIM_DEVICE->CNT = 0;
@@ -93,10 +93,10 @@ void Enc_read(int32_t enc_value[2])
 	uint16_t enc2_cnt = ENC2_TIM_DEVICE->CNT;
 	ENC2_TIM_DEVICE->CNT = 0;
 
-	if (enc1_cnt > 32767) enc_value[0] = (int16_t)enc1_cnt;
-	else enc_value[0] = enc1_cnt;
+	if (enc1_cnt > 32767) enc_value->left = (int16_t)enc1_cnt;
+	else enc_value->left = enc1_cnt;
 
 	// 右タイヤは正転逆転が逆になる
-	if (enc2_cnt > 32767) enc_value[1] = -(int16_t)enc2_cnt;
-	else enc_value[1] = -enc2_cnt;
+	if (enc2_cnt > 32767) enc_value->right = -(int16_t)enc2_cnt;
+	else enc_value->right = -enc2_cnt;
 }
