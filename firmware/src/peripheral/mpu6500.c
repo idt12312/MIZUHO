@@ -5,28 +5,10 @@
  *      Author: idt12312
  */
 
+#include <string.h>
 #include <math.h>
-#include "stm32f4xx_conf.h"
 #include "mpu6500.h"
-
-#define SPI_DEICE				SPI1
-#define SPI_RCC_ENABLE()		RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE)
-// SPIのSCKのクロックの設定
-// SPIのバス(APB1,APB2)のクロックを何分周(2,4,8,16,32,64,128,256)するかで指定
-#define SPI_BAUD_PRESCALER		SPI_BaudRatePrescaler_64
-
-#define SPI_PORT				GPIOB
-#define SPI_PORT_RCC_ENABLE()	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE)
-#define SPI_MOSI_PIN			GPIO_Pin_5
-#define SPI_MISO_PIN			GPIO_Pin_4
-#define SPI_SCK_PIN				GPIO_Pin_3
-#define SPI_MOSI_PIN_AF_CONFIG() GPIO_PinAFConfig(SPI_PORT, GPIO_PinSource5, GPIO_AF_SPI1)
-#define SPI_MISO_PIN_AF_CONFIG() GPIO_PinAFConfig(SPI_PORT, GPIO_PinSource4, GPIO_AF_SPI1)
-#define SPI_SCK_PIN_AF_CONFIG() GPIO_PinAFConfig(SPI_PORT, GPIO_PinSource3, GPIO_AF_SPI1)
-
-#define SPI_CS_PORT				GPIOC
-#define SPI_CS_PIN				GPIO_Pin_12
-#define SPI_CS_PORT_RCC_ENABLE()	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE)
+#include "spi.h"
 
 
 // MPU6500のレジスタマップ
@@ -93,99 +75,46 @@
 // ジャイロのゲインがフルスケールで250dpsの時の値
 #define GYRO_FACTOR  131.0f
 
+#define GYRO_OFFSET_CNT 100
 
-static void spi_init()
-{
-	SPI_PORT_RCC_ENABLE();
+static float gyro_z_offset = 0.0;
 
-	GPIO_InitTypeDef  GPIO_InitStructure;
-	GPIO_InitStructure.GPIO_Pin =  SPI_MOSI_PIN | SPI_MISO_PIN | SPI_SCK_PIN;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_Init(SPI_PORT, &GPIO_InitStructure);
-
-	SPI_MOSI_PIN_AF_CONFIG();
-	SPI_MISO_PIN_AF_CONFIG();
-	SPI_SCK_PIN_AF_CONFIG();
-
-
-	SPI_CS_PORT_RCC_ENABLE();
-	GPIO_InitStructure.GPIO_Pin =  SPI_CS_PIN;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_Init(SPI_CS_PORT, &GPIO_InitStructure);
-
-	GPIO_SetBits(SPI_CS_PORT, SPI_CS_PIN);
-
-
-	SPI_RCC_ENABLE();
-
-	// SCKはアイドル時に1, 後縁で読み取り
-	SPI_InitTypeDef  SPI_InitStructure;
-	SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
-	SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
-	SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;
-	SPI_InitStructure.SPI_CPOL = SPI_CPOL_High;
-	SPI_InitStructure.SPI_CPHA = SPI_CPHA_2Edge;
-	SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;
-	SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BAUD_PRESCALER;
-	SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
-	SPI_Init(SPI_DEICE, &SPI_InitStructure);
-
-	SPI_Cmd(SPI_DEICE, ENABLE);
-}
-
-static void spi_cs_assert()
-{
-	GPIO_ResetBits(SPI_CS_PORT, SPI_CS_PIN);
-}
-
-static void spi_cs_dessert()
-{
-	GPIO_SetBits(SPI_CS_PORT, SPI_CS_PIN);
-}
-static uint8_t spi_xchg(uint8_t data)
-{
-	while (SPI_I2S_GetFlagStatus(SPI_DEICE, SPI_I2S_FLAG_TXE) == RESET);
-	SPI_I2S_SendData(SPI_DEICE, data);
-
-	while (SPI_I2S_GetFlagStatus(SPI_DEICE, SPI_I2S_FLAG_RXNE) == RESET);
-	return SPI_I2S_ReceiveData(SPI_DEICE);
-}
 
 static void spi_write_reg(uint8_t reg_addr, uint8_t data)
 {
-	spi_cs_assert();
+	Spi_cs_assert();
 
-	// アドレスはwriteに指定
-	spi_xchg(reg_addr & 0x7F);
-	spi_xchg(data);
+	uint8_t send_data[2];
+	send_data[0] = reg_addr & 0x7F;  // アドレスはwriteに指定
+	send_data[1] = data;
 
-	spi_cs_dessert();
+	uint8_t dummy[2];
+	Spi_start_xchg(send_data, dummy, 2);
+
+	Spi_cs_dessert();
 }
 
 static void spi_read_reg(uint8_t reg_addr, uint8_t *buffer, size_t size)
 {
-	spi_cs_assert();
+	Spi_cs_assert();
 
-	// アドレスはreadに指定
-	spi_xchg(reg_addr | 0x80);
-	for (int i=0;i<size;i++) {
-		buffer[i] = spi_xchg(0x00);
-	}
+	// 先頭バイトで読み取るレジスタのアドレスを指定するので
+	// サイズはsize+1とする
+	// Spi_start_xchg, memcpyにおいても同様
+	uint8_t send_data[size+1];
+	uint8_t rcv_data[size+1];
+	send_data[0] = reg_addr | 0x80; // アドレスはreadに指定
 
-	spi_cs_dessert();
+	Spi_start_xchg(send_data, rcv_data, size+1);
+	Spi_block(1);
+
+	memcpy(buffer, rcv_data+1, size);
+
+	Spi_cs_dessert();
 }
 
 void MPU6500_init()
 {
-	spi_init();
-
-
 	// リセット
 	spi_write_reg(MPU6500_RA_PWR_MGMT_1, 0x80);
 	for (volatile int i=0;i<100000;i++);
@@ -209,9 +138,8 @@ void MPU6500_init()
 	// FCHOICE_B = b00 : Band=8600Hz, Delay=0.064ms, Fs=32kHz
 	spi_write_reg(MPU6500_RA_GYRO_CONFIG, 0x00);
 
-	// TODO:オフセットを計算
-
 }
+
 
 float MPU6500_read_gyro_z()
 {
@@ -223,6 +151,15 @@ float MPU6500_read_gyro_z()
 	// /180*PIで[rad/s]
 	const float omega = (float)gyro_z / GYRO_FACTOR / 180.0f * M_PI;
 
-	return omega;
+	return omega - gyro_z_offset;
 }
 
+
+void MPU6500_calib_offset()
+{
+	float sum = 0.0;
+	for (int i=0;i<GYRO_OFFSET_CNT;i++) {
+		sum += MPU6500_read_gyro_z();
+	}
+	gyro_z_offset = sum / GYRO_OFFSET_CNT;
+}

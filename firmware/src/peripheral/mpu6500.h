@@ -18,6 +18,8 @@ void MPU6500_init();
 // Z軸周りの角速度を[rad/s]で返す
 float MPU6500_read_gyro_z();
 
+void MPU6500_calib_offset();
+
 #ifdef	__cplusplus
 }
 #endif
