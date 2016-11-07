@@ -83,11 +83,6 @@ void battery_monitor_task(void *)
 	float voltage_sum = 0.0;
 	uint8_t voltage_cnt = 0;
 
-	// 初回チェック
-	if (ADC_TO_BATTERY_VOLTAGE(BatteryMonitor_read()) < BATTERY_MONITOR_ALERT_THREHOLD) {
-		abort("Low Battery");
-	}
-
 	TickType_t last_wake_tick = xTaskGetTickCount();
 	while (1) {
 		vTaskDelayUntil(&last_wake_tick, BATTERY_MONITOR_TASK_PERIOD);
