@@ -6,6 +6,8 @@
  */
 #include "MotorController.h"
 #include "Geometry.h"
+#include "PIDController.h"
+#include "Odometry.h"
 #include <stdio.h>
 
 #include "stm32f4xx.h"
@@ -40,6 +42,7 @@ static void abort(const char* error_msg);
 static void battery_monitor_task(void *);
 static void wall_detect_task(void *);
 static void motor_control_task(void *);
+static void tracking_control_task(void *);
 static void test_task(void *);
 
 static bool control_enable = false;
@@ -48,7 +51,7 @@ void Tasks_init()
 {
 	wall_info_queue = xQueueCreate(1, sizeof(WallDetect::WallInfo));
 	motor_ref_queue = xQueueCreate(1, sizeof(Velocity));
-	machine_velocity_queue = xQueueCreate(1, sizeof(Velocity));
+	machine_velocity_queue = xQueueCreate(10, sizeof(Velocity));
 
 	xTaskCreate(battery_monitor_task, "batt monitor",
 			BATTERY_MONITOR_TASK_STACK_SIZE, NULL,
@@ -66,6 +69,23 @@ void Tasks_init()
 	xTaskCreate(motor_control_task, "motor ctrl",
 			MOTOR_CONTROL_TASK_STACK_SIZE, &pid_param,
 			MOTOR_CONTROL_TASK_PRIORITY, NULL);
+
+
+	static PIDParam track_param[2];
+	track_param[0].T = 0.005f;
+	track_param[0].Kp = 0.0f;
+	track_param[0].Ki = 0.00f;
+	track_param[0].Kd = 0.0000f;
+
+	track_param[1].T = 0.005f;
+	track_param[1].Kp = 0.0f;
+	track_param[1].Ki = 0.00f;
+	track_param[1].Kd = 0.0000f;
+	xTaskCreate(tracking_control_task, "track ctrl",
+			TRACKING_CONTROL_TASK_STACK_SIZE, track_param,
+			TRACKING_CONTROL_TASK_PRIORITY, NULL);
+
+
 
 	xTaskCreate(test_task, "test",
 			256, NULL,
@@ -173,9 +193,28 @@ void motor_control_task(void *arg)
 		Motor_set_voltage(&motor_voltage);
 
 		const Velocity measured_velocity = motor_controller.get_measured_velocity();
-		//xQueueSend(machine_velocity_queue, &measured_velocity, MOTOR_CONTROL_TASK_PERIOD);
+		xQueueSend(machine_velocity_queue, &measured_velocity, MOTOR_CONTROL_TASK_PERIOD);
+	}
+}
 
-		xQueueOverwrite(machine_velocity_queue, &measured_velocity);
+
+
+static void tracking_control_task(void *arg)
+{
+	PIDParam* controller_param = (PIDParam*)arg;
+	TrackingController tracking_controller(controller_param[0], controller_param[1]);
+	Odometry odometry(0.001);
+
+	TickType_t last_wake_tick = xTaskGetTickCount();
+	while (1) {
+		vTaskDelayUntil(&last_wake_tick, TRACKING_CONTROL_TASK_PERIOD);
+		last_wake_tick = xTaskGetTickCount();
+
+		Velocity measured_velocity;
+		while (xQueueReceive(machine_velocity_queue, &measured_velocity, 0) == pdTRUE) {
+			odometry.update(measured_velocity);
+		}
+
 	}
 }
 
@@ -199,7 +238,7 @@ static void test_task(void *)
 {
 	TickType_t last_wake_tick = xTaskGetTickCount();
 
-	Velocity motor_ref(0.0f, 3.0f);
+	Velocity motor_ref(0.0f, 0.0f);
 	xQueueOverwrite(motor_ref_queue, &motor_ref);
 
 	Velocity measured;
@@ -208,13 +247,15 @@ static void test_task(void *)
 		vTaskDelayUntil(&last_wake_tick, 200);
 		last_wake_tick = xTaskGetTickCount();
 
-		if (Uart_rcv_size() != 0) {
-			char ch = Uart_read_byte();
-			if (ch == 's') control_enable = true;
-			else control_enable = false;
-
+		if (ButtonL_get()) {
+			vTaskDelay(2000);
+			last_wake_tick = xTaskGetTickCount();
+			control_enable = true;
+			vTaskDelayUntil(&last_wake_tick, 4000);
+			control_enable = false;
 		}
-		xQueuePeek(machine_velocity_queue, &measured, 0);
-		printf("%d %d\n", (int32_t)(measured.v*1000), (int32_t)(measured.omega*1000));
+		if (ButtonR_get()) {
+			control_enable = false;
+		}
 	}
 }
