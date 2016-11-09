@@ -12,9 +12,9 @@
 /************************************************
  * マシンの物理的パラメータ
  ***********************************************/
-#define WHEEL_RADIUS	0.012f
+#define WHEEL_RADIUS	0.01237f
 // 中心からタイヤまでの距離
-#define TREAD_WIDTH 	0.034f
+#define TREAD_WIDTH 	0.03289f
 #define ENC_CNT_PER_ROT	(1024*4*4)
 #define MOTOR_VOLTAGE	7.6f
 
