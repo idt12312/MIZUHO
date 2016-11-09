@@ -78,7 +78,9 @@
 #define GYRO_OFFSET_CNT 100
 
 static float gyro_z_offset = 0.0;
-
+static bool offset_calc = false;
+static float offset_sum = 0.0;
+static uint16_t offset_cnt = 0;
 
 static void spi_write_reg(uint8_t reg_addr, uint8_t data)
 {
@@ -151,15 +153,22 @@ float MPU6500_read_gyro_z()
 	// /180*PIで[rad/s]
 	const float omega = (float)gyro_z / GYRO_FACTOR / 180.0f * M_PI;
 
+	if (offset_calc) {
+		offset_cnt++;
+		offset_sum += omega;
+		if (offset_cnt > GYRO_OFFSET_CNT) {
+			gyro_z_offset = offset_sum / GYRO_OFFSET_CNT;
+			offset_cnt = 0;
+			offset_sum = 0;
+			offset_calc = false;
+		}
+	}
+
 	return omega - gyro_z_offset;
 }
 
 
 void MPU6500_calib_offset()
 {
-	float sum = 0.0;
-	for (int i=0;i<GYRO_OFFSET_CNT;i++) {
-		sum += MPU6500_read_gyro_z();
-	}
-	gyro_z_offset = sum / GYRO_OFFSET_CNT;
+	offset_calc = true;
 }
