@@ -36,7 +36,7 @@ struct Position {
 	float y;
 	float theta;
 
-	Position(float _x=0.0f, float _y=0.0f, float _theta=PI/2)
+	Position(float _x=0.0f, float _y=0.0f, float _theta=0.0f)
 		:x(_x), y(_y), theta(_theta) {}
 };
 

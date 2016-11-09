@@ -69,7 +69,7 @@ private:
 class PivotTurnRight90 : public Trajectory {
 public:
 	PivotTurnRight90()
-		:odo(0.005), trapezoid(0.005, 15, 5, 0, PI/2, PI) {}
+		:odo(0.005), trapezoid(0.005, 15, 5, 0, 0, PI/2) {}
 	virtual ~PivotTurnRight90() {}
 
 	TrajectoryTarget next()

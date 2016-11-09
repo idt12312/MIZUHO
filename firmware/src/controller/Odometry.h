@@ -27,8 +27,8 @@ public:
 
 	void update(const Velocity &v)
 	{
-		const float dx =  arm_cos_f32(pos.theta) * v.v;
-		const float dy = arm_sin_f32(pos.theta) * v.v;
+		const float dx =  -arm_sin_f32(pos.theta) * v.v;
+		const float dy = arm_cos_f32(pos.theta) * v.v;
 
 		// 台形積分
 		pos.x += (dx+prev_dx)/2 * T;
@@ -42,8 +42,7 @@ public:
 
 	void reset()
 	{
-		pos.x = pos.y = 0.0f;
-		pos.theta = PI/2;
+		pos.x = pos.y = pos.theta = 0.0f;
 		prev_dx = prev_dy = prev_omega = 0.0f;
 	}
 
