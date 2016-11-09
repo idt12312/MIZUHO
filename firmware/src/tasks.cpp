@@ -8,6 +8,8 @@
 #include "Geometry.h"
 #include "PIDController.h"
 #include "Odometry.h"
+#include "TrackingController.h"
+#include "Trajectory.h"
 #include <stdio.h>
 
 #include "stm32f4xx.h"
@@ -37,6 +39,8 @@
 static xQueueHandle wall_info_queue;
 static xQueueHandle motor_ref_queue;
 static xQueueHandle machine_velocity_queue;
+static xQueueHandle trajectory_queue;
+static xQueueHandle pos_queue;
 
 static void abort(const char* error_msg);
 static void battery_monitor_task(void *);
@@ -52,6 +56,8 @@ void Tasks_init()
 	wall_info_queue = xQueueCreate(1, sizeof(WallDetect::WallInfo));
 	motor_ref_queue = xQueueCreate(1, sizeof(Velocity));
 	machine_velocity_queue = xQueueCreate(10, sizeof(Velocity));
+	trajectory_queue = xQueueCreate(10, sizeof(Trajectory*));
+	pos_queue = xQueueCreate(1, sizeof(Position));
 
 	xTaskCreate(battery_monitor_task, "batt monitor",
 			BATTERY_MONITOR_TASK_STACK_SIZE, NULL,
@@ -71,20 +77,27 @@ void Tasks_init()
 			MOTOR_CONTROL_TASK_PRIORITY, NULL);
 
 
-	static PIDParam track_param[2];
+	static PIDParam track_param[3];
+	// pos x
 	track_param[0].T = 0.005f;
-	track_param[0].Kp = 0.0f;
+	track_param[0].Kp = 20.0f;
 	track_param[0].Ki = 0.00f;
-	track_param[0].Kd = 0.0000f;
+	track_param[0].Kd = 0.01f;
 
+	// pox y
 	track_param[1].T = 0.005f;
-	track_param[1].Kp = 0.0f;
-	track_param[1].Ki = 0.00f;
-	track_param[1].Kd = 0.0000f;
+	track_param[1].Kp = 50.0f;
+	track_param[1].Ki = 0.1f;
+	track_param[1].Kd = 0.02f;
+
+	// angle
+	track_param[2].T = 0.005f;
+	track_param[2].Kp = 3.0f;
+	track_param[2].Ki = 0.05f;
+	track_param[2].Kd = 0.0f;
 	xTaskCreate(tracking_control_task, "track ctrl",
 			TRACKING_CONTROL_TASK_STACK_SIZE, track_param,
 			TRACKING_CONTROL_TASK_PRIORITY, NULL);
-
 
 
 	xTaskCreate(test_task, "test",
@@ -185,10 +198,7 @@ void motor_control_task(void *arg)
 		MotorVoltage motor_voltage = motor_controller.update(ref, enc_value, gyro);
 		if (!control_enable) {
 			motor_voltage.left = motor_voltage.right = 0.0f;
-			float duty[2];
-			duty[0] = 0.0;
-			duty[1] = 0.0;
-			Motor_set_duty(duty);
+			motor_controller.reset();
 		}
 		Motor_set_voltage(&motor_voltage);
 
@@ -202,8 +212,11 @@ void motor_control_task(void *arg)
 static void tracking_control_task(void *arg)
 {
 	PIDParam* controller_param = (PIDParam*)arg;
-	TrackingController tracking_controller(controller_param[0], controller_param[1]);
+	TrackingController tracking_controller(controller_param[0], controller_param[1], controller_param[2]);
 	Odometry odometry(0.001);
+	Trajectory *traj = nullptr;
+	TrajectoryTarget target(TrajectoryTarget::Type::PIVOT, Position(), Velocity());
+	xQueueSend(pos_queue, &odometry.get_pos(), TRACKING_CONTROL_TASK_PERIOD);
 
 	TickType_t last_wake_tick = xTaskGetTickCount();
 	while (1) {
@@ -214,7 +227,30 @@ static void tracking_control_task(void *arg)
 		while (xQueueReceive(machine_velocity_queue, &measured_velocity, 0) == pdTRUE) {
 			odometry.update(measured_velocity);
 		}
+		xQueueOverwrite(pos_queue, &odometry.get_pos());
 
+
+		if (traj == nullptr || traj->is_end()) {
+			// 新しい軌道シーケンスをセット
+			if (xQueueReceive(trajectory_queue, &traj, 0) == pdTRUE) {
+				//TODO:odometryをリセット?
+
+				tracking_controller.reset();
+			}
+			else {
+				// 終了を通知
+			}
+		}
+
+		if (traj == nullptr) continue;
+
+		target = traj->next();
+
+		// TODO:target.type==STRAIGHTのときに壁とかで補正をかける
+
+		Velocity motor_ref;
+		motor_ref = tracking_controller.update(odometry.get_pos(), target);
+		xQueueOverwrite(motor_ref_queue, &motor_ref);
 	}
 }
 
@@ -243,19 +279,29 @@ static void test_task(void *)
 
 	Velocity measured;
 
+	Straight straight;
+	PivotTurnRight90 turn;
+	Trajectory *traj = &turn;
+
+	vTaskDelay(3000);
+	MPU6500_calib_offset();
 	while (1) {
-		vTaskDelayUntil(&last_wake_tick, 200);
+		vTaskDelayUntil(&last_wake_tick, 100);
 		last_wake_tick = xTaskGetTickCount();
 
 		if (ButtonL_get()) {
 			vTaskDelay(2000);
+			// TODO:odometryをリセットしたい
 			last_wake_tick = xTaskGetTickCount();
 			control_enable = true;
-			vTaskDelayUntil(&last_wake_tick, 4000);
-			control_enable = false;
+			xQueueSend(trajectory_queue, &traj, 1);
 		}
 		if (ButtonR_get()) {
 			control_enable = false;
 		}
+
+		Position pos;
+		xQueuePeek(pos_queue, &pos, 100);
+		printf("%d %d %d\n", (int)(pos.x*1000), (int)(pos.y*1000), (int)(pos.theta/PI*180));
 	}
 }
