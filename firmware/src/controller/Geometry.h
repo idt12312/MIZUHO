@@ -8,8 +8,6 @@
 #ifndef CONTROLLER_GEOMETRY_H_
 #define CONTROLLER_GEOMETRY_H_
 
-#include "arm_math.h"
-#include <cmath>
 
 
 struct Velocity {

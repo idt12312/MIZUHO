@@ -41,6 +41,7 @@ static xQueueHandle motor_ref_queue;
 static xQueueHandle machine_velocity_queue;
 static xQueueHandle trajectory_queue;
 static xQueueHandle pos_queue;
+static xSemaphoreHandle trajectory_end_semaphore;
 
 static void abort(const char* error_msg);
 static void battery_monitor_task(void *);
@@ -58,6 +59,7 @@ void Tasks_init()
 	machine_velocity_queue = xQueueCreate(10, sizeof(Velocity));
 	trajectory_queue = xQueueCreate(10, sizeof(Trajectory*));
 	pos_queue = xQueueCreate(1, sizeof(Position));
+	trajectory_end_semaphore = xSemaphoreCreateBinary();
 
 	xTaskCreate(battery_monitor_task, "batt monitor",
 			BATTERY_MONITOR_TASK_STACK_SIZE, NULL,
@@ -279,9 +281,10 @@ static void test_task(void *)
 
 	Velocity measured;
 
-	Straight straight;
-	PivotTurnRight90 turn;
-	Trajectory *traj = &turn;
+	//Straight straight;
+	//PivotTurnRight90 turn;
+	SlalomTurnRight90 slalom;
+	Trajectory *traj = &slalom;
 
 	vTaskDelay(3000);
 	MPU6500_calib_offset();
