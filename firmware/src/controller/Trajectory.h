@@ -48,7 +48,7 @@ public:
 class Straight : public Trajectory {
 public:
 	Straight()
-		:odo(0.005), trapezoid(0.005, 0.5, 1, 0.3, 0, 0) {}
+		:odo(0.005), trapezoid(0.005, 0.5, 1, 0.3, 0, 0.2) {}
 	virtual ~Straight() {}
 
 	TrajectoryTarget next()

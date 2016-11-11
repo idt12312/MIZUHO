@@ -36,6 +36,15 @@ struct Position {
 
 	Position(float _x=0.0f, float _y=0.0f, float _theta=0.0f)
 		:x(_x), y(_y), theta(_theta) {}
+
+	Position operator+(const Position lhs) const
+	{
+		return Position(this->x+lhs.x,this->y+lhs.y,this->theta+lhs.theta);
+	}
+	Position operator-(const Position lhs) const
+	{
+		return Position(this->x-lhs.x,this->y-lhs.y,this->theta-lhs.theta);
+	}
 };
 
 

@@ -220,6 +220,8 @@ static void tracking_control_task(void *arg)
 	TrajectoryTarget target(TrajectoryTarget::Type::PIVOT, Position(), Velocity());
 	xQueueSend(pos_queue, &odometry.get_pos(), TRACKING_CONTROL_TASK_PERIOD);
 
+	Position last_target_pos;
+
 	TickType_t last_wake_tick = xTaskGetTickCount();
 	while (1) {
 		vTaskDelayUntil(&last_wake_tick, TRACKING_CONTROL_TASK_PERIOD);
@@ -236,7 +238,9 @@ static void tracking_control_task(void *arg)
 			// 新しい軌道シーケンスをセット
 			if (xQueueReceive(trajectory_queue, &traj, 0) == pdTRUE) {
 				//TODO:odometryをリセット?
-
+				Position current_pos = odometry.get_pos();
+				odometry.reset();
+				odometry.set_pos(current_pos-last_target_pos);
 				tracking_controller.reset();
 			}
 			else {
@@ -247,6 +251,7 @@ static void tracking_control_task(void *arg)
 		if (traj == nullptr) continue;
 
 		target = traj->next();
+		last_target_pos = target.pos;
 
 		// TODO:target.type==STRAIGHTのときに壁とかで補正をかける
 
@@ -271,7 +276,6 @@ static void abort(const char* error_msg)
 }
 
 
-
 static void test_task(void *)
 {
 	TickType_t last_wake_tick = xTaskGetTickCount();
@@ -281,10 +285,10 @@ static void test_task(void *)
 
 	Velocity measured;
 
-	//Straight straight;
+	Straight straight;
 	//PivotTurnRight90 turn;
 	SlalomTurnRight90 slalom;
-	Trajectory *traj = &slalom;
+	Trajectory *traj;
 
 	vTaskDelay(3000);
 	MPU6500_calib_offset();
@@ -297,6 +301,9 @@ static void test_task(void *)
 			// TODO:odometryをリセットしたい
 			last_wake_tick = xTaskGetTickCount();
 			control_enable = true;
+			traj = &straight;
+			xQueueSend(trajectory_queue, &traj, 1);
+			traj = &slalom;
 			xQueueSend(trajectory_queue, &traj, 1);
 		}
 		if (ButtonR_get()) {
