@@ -70,7 +70,7 @@ void Tasks_init()
 			WALL_DETECT_TASK_PRIORITY, NULL);
 
 	static PIDParam pid_param;
-	pid_param.T = 0.001f;
+	pid_param.T = MOTOR_CONTROL_TASK_PERIOD_SEC;
 	pid_param.Kp = 0.8f;
 	pid_param.Ki = 0.01f;
 	pid_param.Kd = 0.0001f;
@@ -81,19 +81,19 @@ void Tasks_init()
 
 	static PIDParam track_param[3];
 	// pos x
-	track_param[0].T = 0.005f;
+	track_param[0].T = TRACKING_CONTROL_TASK_PERIOD_SEC;
 	track_param[0].Kp = 20.0f;
 	track_param[0].Ki = 0.00f;
 	track_param[0].Kd = 0.01f;
 
 	// pox y
-	track_param[1].T = 0.005f;
+	track_param[1].T = TRACKING_CONTROL_TASK_PERIOD_SEC;
 	track_param[1].Kp = 50.0f;
 	track_param[1].Ki = 0.1f;
 	track_param[1].Kd = 0.02f;
 
 	// angle
-	track_param[2].T = 0.005f;
+	track_param[2].T = TRACKING_CONTROL_TASK_PERIOD_SEC;
 	track_param[2].Kp = 3.0f;
 	track_param[2].Ki = 0.05f;
 	track_param[2].Kd = 0.0f;
@@ -215,7 +215,7 @@ static void tracking_control_task(void *arg)
 {
 	PIDParam* controller_param = (PIDParam*)arg;
 	TrackingController tracking_controller(controller_param[0], controller_param[1], controller_param[2]);
-	Odometry odometry(0.001);
+	Odometry odometry(MOTOR_CONTROL_TASK_PERIOD_SEC);
 	Trajectory *traj = nullptr;
 	TrajectoryTarget target(TrajectoryTarget::Type::PIVOT, Position(), Velocity());
 	xQueueSend(pos_queue, &odometry.get_pos(), TRACKING_CONTROL_TASK_PERIOD);
@@ -285,9 +285,10 @@ static void test_task(void *)
 
 	Velocity measured;
 
-	Straight straight;
-	//PivotTurnRight90 turn;
-	SlalomTurnRight90 slalom;
+	Straight straight1(BLOCK_SIZE*1, 0, STRAIGHT_DEFAULT_VELOCITY);
+	//PivotTurn turn(-PI/2);
+	SlalomTurn slalom(-PI/2);
+	Straight straight2(BLOCK_SIZE*1, STRAIGHT_DEFAULT_VELOCITY, 0);
 	Trajectory *traj;
 
 	vTaskDelay(3000);
@@ -301,10 +302,14 @@ static void test_task(void *)
 			// TODO:odometryをリセットしたい
 			last_wake_tick = xTaskGetTickCount();
 			control_enable = true;
-			traj = &straight;
-			xQueueSend(trajectory_queue, &traj, 1);
+			traj = &straight1;
+			xQueueSend(trajectory_queue, &traj, 10);
+			for (int i=0;i<4;i++) {
 			traj = &slalom;
-			xQueueSend(trajectory_queue, &traj, 1);
+			xQueueSend(trajectory_queue, &traj, 10);
+			}
+			traj = &straight2;
+			xQueueSend(trajectory_queue, &traj, 10);
 		}
 		if (ButtonR_get()) {
 			control_enable = false;

@@ -47,8 +47,12 @@ public:
 
 class Straight : public Trajectory {
 public:
-	Straight()
-		:odo(0.005), trapezoid(0.005, 0.5, 1, 0.3, 0, 0.2) {}
+	Straight(float L, float v_start=0.0f, float v_end=0.0f)
+		:odo(0.005),
+		 trapezoid(TRACKING_CONTROL_TASK_PERIOD_SEC, L, STRAIGHT_ACCERALATION, STRAIGHT_MAX_VELOCITY, v_start, v_end)
+	{
+	}
+
 	virtual ~Straight() {}
 
 	TrajectoryTarget next()
@@ -66,11 +70,15 @@ private:
 };
 
 
-class PivotTurnRight90 : public Trajectory {
+class PivotTurn : public Trajectory {
 public:
-	PivotTurnRight90()
-		:odo(0.005), trapezoid(0.005, PI/2, 15, 5, 0, 0) {}
-	virtual ~PivotTurnRight90() {}
+	PivotTurn(float angle)
+		:odo(0.005),
+		 trapezoid(TRACKING_CONTROL_TASK_PERIOD_SEC, angle, PIVOT_ROTATION_ACCERALATION, PIVOT_ROTATION_VELOCITY, 0, 0)
+	{
+	}
+
+	virtual ~PivotTurn() {}
 
 	TrajectoryTarget next()
 	{
@@ -87,10 +95,12 @@ private:
 };
 
 
-class SlalomTurnRight90 : public Trajectory {
+class SlalomTurn : public Trajectory {
 public:
-	SlalomTurnRight90()
-		:odo(0.005), trapezoid(0.005, -PI/2, 20, 5, 0, 0)
+	SlalomTurn(float angle)
+		:odo(0.005),
+		 v(SLALOM_VELOCITY),
+		 trapezoid(TRACKING_CONTROL_TASK_PERIOD_SEC, angle, SLALOM_ROTATION_ACCERALATION, SLALOM_ROTATION_VELOCITY, 0, 0)
 	{
 		odo.reset();
 		curve_len_cnt = 0;
@@ -99,7 +109,7 @@ public:
 			odo.update(Velocity(v,omega));
 			curve_len_cnt++;
 		}
-		curve_length = std::abs(odo.get_pos().x);
+		const float curve_length = std::abs(odo.get_pos().x);
 
 		if (curve_length > BLOCK_SIZE/2) {
 			//error
@@ -107,7 +117,7 @@ public:
 			while (1);
 		}
 
-		straight_length = BLOCK_SIZE/2 - curve_length;
+		const float straight_length = BLOCK_SIZE/2 - curve_length;
 		first_straight_len_cnt = (size_t)(straight_length/(v*0.005));
 		curve_len_cnt += first_straight_len_cnt;
 		second_straight_len_cnt = curve_len_cnt + first_straight_len_cnt;
@@ -117,7 +127,7 @@ public:
 		trapezoid.reset();
 		cnt = 0;
 	}
-	virtual ~SlalomTurnRight90() {}
+	virtual ~SlalomTurn() {}
 
 	TrajectoryTarget next()
 	{
@@ -133,7 +143,7 @@ public:
 		}
 		else {
 			end = true;
-			next_v = Velocity(0,0);
+			next_v = Velocity(v,0);
 		}
 		cnt++;
 		odo.update(next_v);
@@ -142,15 +152,13 @@ public:
 
 private:
 	Odometry odo;
+	const float v;
 	Trapezoid trapezoid;
 
 	size_t cnt;
-	float curve_length;
-	float straight_length;
 	size_t first_straight_len_cnt;
 	size_t curve_len_cnt;
 	size_t second_straight_len_cnt;
-	const float v = 0.2f;
 };
 
 

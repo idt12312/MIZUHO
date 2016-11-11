@@ -20,6 +20,19 @@
 
 
 /************************************************
+ * マシンの走行パラメータ
+ ***********************************************/
+#define STRAIGHT_DEFAULT_VELOCITY		0.2f
+#define STRAIGHT_MAX_VELOCITY			0.4f
+#define STRAIGHT_ACCERALATION			1.0f
+#define PIVOT_ROTATION_VELOCITY			5.0f
+#define PIVOT_ROTATION_ACCERALATION		15.0f
+#define SLALOM_VELOCITY					0.2f
+#define SLALOM_ROTATION_VELOCITY		5.0f
+#define SLALOM_ROTATION_ACCERALATION	20.0f
+
+
+/************************************************
  * フィールドの物理的パラメータ
  ***********************************************/
 #define BLOCK_SIZE	0.18f
@@ -52,6 +65,7 @@
  ***********************************************/
 #define MOTOR_CONTROL_TASK_PRIORITY		1
 #define MOTOR_CONTROL_TASK_PERIOD		1
+#define MOTOR_CONTROL_TASK_PERIOD_SEC	((float)MOTOR_CONTROL_TASK_PERIOD/1000.0f)
 #define MOTOR_CONTROL_TASK_STACK_SIZE	512
 
 
@@ -60,6 +74,7 @@
  ***********************************************/
 #define TRACKING_CONTROL_TASK_PRIORITY		2
 #define TRACKING_CONTROL_TASK_PERIOD		5
+#define TRACKING_CONTROL_TASK_PERIOD_SEC	((float)TRACKING_CONTROL_TASK_PERIOD/1000.0f)
 #define TRACKING_CONTROL_TASK_STACK_SIZE	512
 
 
