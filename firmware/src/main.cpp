@@ -18,6 +18,9 @@
 
 #include "QuadratureDemodulator.h"
 
+
+void* __dso_handle = 0;
+
 extern "C" {
 void vApplicationStackOverflowHook( TaskHandle_t xTask, char *pcTaskName );
 void vApplicationMallocFailedHook();
