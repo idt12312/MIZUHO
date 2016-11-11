@@ -41,6 +41,7 @@ public:
 
 	inline bool is_end() {return end;}
 	virtual TrajectoryTarget next() = 0;
+	virtual void adjust_start_position(const Position &pos) = 0;
 };
 
 
@@ -62,6 +63,17 @@ public:
 		odo.update(next_v);
 
 		return TrajectoryTarget(TrajectoryTarget::Type::STRAIGHT, odo.get_pos(), next_v);
+	}
+
+	void adjust_start_position(const Position &pos)
+	{
+		odo.reset();
+		trapezoid.reset();
+		end = false;
+		while (1) {
+			TrajectoryTarget target = next();
+			if (pos.y < target.pos.y) break;
+		}
 	}
 
 private:
@@ -87,6 +99,17 @@ public:
 		odo.update(next_v);
 
 		return TrajectoryTarget(TrajectoryTarget::Type::PIVOT, odo.get_pos(), next_v);
+	}
+
+	void adjust_start_position(const Position &pos)
+	{
+		odo.reset();
+		trapezoid.reset();
+		end = false;
+		while (1) {
+			TrajectoryTarget target = next();
+			if (pos.theta < target.pos.theta) break;
+		}
 	}
 
 private:
@@ -148,6 +171,18 @@ public:
 		cnt++;
 		odo.update(next_v);
 		return TrajectoryTarget(TrajectoryTarget::Type::SLALOM, odo.get_pos(), next_v);
+	}
+
+	void adjust_start_position(const Position &pos)
+	{
+		odo.reset();
+		trapezoid.reset();
+		end = false;
+		cnt = 0;
+		while (1) {
+			TrajectoryTarget target = next();
+			if (pos.y < target.pos.y) break;
+		}
 	}
 
 private:

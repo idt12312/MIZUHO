@@ -241,6 +241,7 @@ static void tracking_control_task(void *arg)
 				Position current_pos = odometry.get_pos();
 				odometry.reset();
 				odometry.set_pos(current_pos-last_target_pos);
+				traj->adjust_start_position(odometry.get_pos());
 				tracking_controller.reset();
 			}
 			else {
