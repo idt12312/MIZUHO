@@ -12,7 +12,7 @@
 #include "Geometry.h"
 #include "Trajectory.h"
 #include "PIDController.h"
-
+#include "config.h"
 
 class TrackingController {
 private:
@@ -57,7 +57,7 @@ public:
 	{
 		if (ref.type == TrajectoryTarget::Type::SLALOM || ref.type == TrajectoryTarget::Type::STRAIGHT) {
 			// 速度のフィードフォワード + 位置のフィードバック
-			return ref.v + track_slalom(pos, ref.pos);
+			return Velocity(ref.v.v, ref.v.omega*TRACKING_CONTROL_OMEGA_FORWARD_GAIN) + track_slalom(pos, ref.pos);
 		}
 		else if (ref.type == TrajectoryTarget::Type::PIVOT) {
 			// 速度のフィードフォワード + 位置のフィードバック
