@@ -106,10 +106,10 @@ public:
 		odo.reset();
 		trapezoid.reset();
 		end = false;
-		while (1) {
+		/*while (1) {
 			TrajectoryTarget target = next();
-			if (pos.theta < target.pos.theta) break;
-		}
+			if (std::abs(pos.theta) < std::abs(target.pos.theta)) break;
+		}*/
 	}
 
 private:

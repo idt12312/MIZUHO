@@ -22,14 +22,14 @@
 /************************************************
  * マシンの走行パラメータ
  ***********************************************/
-#define STRAIGHT_DEFAULT_VELOCITY		0.2f
-#define STRAIGHT_MAX_VELOCITY			0.4f
+#define STRAIGHT_DEFAULT_VELOCITY		0.1f
+#define STRAIGHT_MAX_VELOCITY			0.2f
 #define STRAIGHT_ACCERALATION			1.0f
-#define PIVOT_ROTATION_VELOCITY			5.0f
+#define PIVOT_ROTATION_VELOCITY			3.0f
 #define PIVOT_ROTATION_ACCERALATION		15.0f
-#define SLALOM_VELOCITY					0.2f
-#define SLALOM_ROTATION_VELOCITY		5.0f
-#define SLALOM_ROTATION_ACCERALATION	20.0f
+#define SLALOM_VELOCITY					0.1f
+#define SLALOM_ROTATION_VELOCITY		1.5f
+#define SLALOM_ROTATION_ACCERALATION	10.0f
 
 
 /************************************************

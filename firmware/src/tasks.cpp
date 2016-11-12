@@ -51,7 +51,7 @@ static void tracking_control_task(void *);
 static void test_task(void *);
 
 static bool control_enable = false;
-
+static bool is_first = true;
 void Tasks_init()
 {
 	wall_info_queue = xQueueCreate(1, sizeof(WallDetect::WallInfo));
@@ -71,7 +71,7 @@ void Tasks_init()
 
 	static PIDParam pid_param;
 	pid_param.T = MOTOR_CONTROL_TASK_PERIOD_SEC;
-	pid_param.Kp = 0.8f;
+	pid_param.Kp = 1.0f;
 	pid_param.Ki = 0.01f;
 	pid_param.Kd = 0.0001f;
 	xTaskCreate(motor_control_task, "motor ctrl",
@@ -82,15 +82,15 @@ void Tasks_init()
 	static PIDParam track_param[3];
 	// pos x
 	track_param[0].T = TRACKING_CONTROL_TASK_PERIOD_SEC;
-	track_param[0].Kp = 20.0f;
+	track_param[0].Kp = 80.0f;
 	track_param[0].Ki = 0.00f;
-	track_param[0].Kd = 0.01f;
+	track_param[0].Kd = 1.0f;
 
 	// pox y
 	track_param[1].T = TRACKING_CONTROL_TASK_PERIOD_SEC;
-	track_param[1].Kp = 50.0f;
-	track_param[1].Ki = 0.1f;
-	track_param[1].Kd = 0.02f;
+	track_param[1].Kp = 60.0f;
+	track_param[1].Ki = 0.0f;
+	track_param[1].Kd = 0.05f;
 
 	// angle
 	track_param[2].T = TRACKING_CONTROL_TASK_PERIOD_SEC;
@@ -103,7 +103,7 @@ void Tasks_init()
 
 
 	xTaskCreate(test_task, "test",
-			256, NULL,
+			1024, NULL,
 			1, NULL);
 
 	control_enable = false;
@@ -238,10 +238,14 @@ static void tracking_control_task(void *arg)
 		if (traj == nullptr || traj->is_end()) {
 			// 新しい軌道シーケンスをセット
 			if (xQueueReceive(trajectory_queue, &traj, 0) == pdTRUE) {
-				//TODO:odometryをリセット?
 				Position current_pos = odometry.get_pos();
 				odometry.reset();
-				odometry.set_pos(current_pos-last_target_pos);
+				if (is_first) {
+					is_first = false;
+				}
+				else {
+					odometry.set_pos(current_pos-last_target_pos);
+				}
 				traj->adjust_start_position(odometry.get_pos());
 				tracking_controller.reset();
 			}
@@ -293,22 +297,21 @@ static void test_task(void *)
 	Straight straight2(BLOCK_SIZE*1, STRAIGHT_DEFAULT_VELOCITY, 0);
 	Trajectory *traj;
 
-	vTaskDelay(3000);
-	MPU6500_calib_offset();
 	while (1) {
 		vTaskDelayUntil(&last_wake_tick, 100);
 		last_wake_tick = xTaskGetTickCount();
 
 		if (ButtonL_get()) {
 			vTaskDelay(2000);
-			// TODO:odometryをリセットしたい
+			MPU6500_calib_offset();
+			vTaskDelay(1000);
 			last_wake_tick = xTaskGetTickCount();
 			control_enable = true;
 			traj = &straight1;
 			xQueueSend(trajectory_queue, &traj, 10);
 			for (int i=0;i<4;i++) {
-			traj = &slalom;
-			xQueueSend(trajectory_queue, &traj, 10);
+				traj = &slalom;
+				xQueueSend(trajectory_queue, &traj, 10);
 			}
 			traj = &straight2;
 			xQueueSend(trajectory_queue, &traj, 10);
