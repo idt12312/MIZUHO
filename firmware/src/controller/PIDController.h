@@ -25,7 +25,6 @@ private:
 	PIDParam param;
 
 	// 内部状態
-	float reference = 0.0f;
 	float error_sum = 0.0f;
 	float prev_error = 0.0f;
 
@@ -36,7 +35,7 @@ public:
 
 	virtual ~PIDController() {}
 
-	float update(float measured)
+	float update(float measured, float reference)
 	{
 		const float error = reference - measured;
 		const float error_diff = (error - prev_error)/param.T;
@@ -56,23 +55,14 @@ public:
 		return control_input;
 	}
 
-	float update(float measured, float _reference)
-	{
-		reference = _reference;
-		return update(measured);
-	}
-
 	void reset()
 	{
-		reference = 0.0f;
 		error_sum = 0.0f;
 		prev_error = 0.0f;
 	}
 
-	void set_ref(float ref) { reference = ref; }
 	void set_param(const PIDParam& _param) { param = _param; }
 
-	inline float get_ref() { return reference; }
 	inline const PIDParam &get_param() { return param; }
 };
 

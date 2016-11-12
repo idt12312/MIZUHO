@@ -6,6 +6,10 @@
  */
 #include "MotorController.h"
 #include "Geometry.h"
+#include "PIDController.h"
+#include "Odometry.h"
+#include "TrackingController.h"
+#include "Trajectory.h"
 #include <stdio.h>
 
 #include "stm32f4xx.h"
@@ -35,20 +39,27 @@
 static xQueueHandle wall_info_queue;
 static xQueueHandle motor_ref_queue;
 static xQueueHandle machine_velocity_queue;
+static xQueueHandle trajectory_queue;
+static xQueueHandle pos_queue;
+static xSemaphoreHandle trajectory_end_semaphore;
 
 static void abort(const char* error_msg);
 static void battery_monitor_task(void *);
 static void wall_detect_task(void *);
 static void motor_control_task(void *);
+static void tracking_control_task(void *);
 static void test_task(void *);
 
 static bool control_enable = false;
-
+static bool is_first = true;
 void Tasks_init()
 {
 	wall_info_queue = xQueueCreate(1, sizeof(WallDetect::WallInfo));
 	motor_ref_queue = xQueueCreate(1, sizeof(Velocity));
-	machine_velocity_queue = xQueueCreate(1, sizeof(Velocity));
+	machine_velocity_queue = xQueueCreate(10, sizeof(Velocity));
+	trajectory_queue = xQueueCreate(10, sizeof(Trajectory*));
+	pos_queue = xQueueCreate(1, sizeof(Position));
+	trajectory_end_semaphore = xSemaphoreCreateBinary();
 
 	xTaskCreate(battery_monitor_task, "batt monitor",
 			BATTERY_MONITOR_TASK_STACK_SIZE, NULL,
@@ -59,16 +70,40 @@ void Tasks_init()
 			WALL_DETECT_TASK_PRIORITY, NULL);
 
 	static PIDParam pid_param;
-	pid_param.T = 0.001f;
-	pid_param.Kp = 0.8f;
+	pid_param.T = MOTOR_CONTROL_TASK_PERIOD_SEC;
+	pid_param.Kp = 1.0f;
 	pid_param.Ki = 0.01f;
 	pid_param.Kd = 0.0001f;
 	xTaskCreate(motor_control_task, "motor ctrl",
 			MOTOR_CONTROL_TASK_STACK_SIZE, &pid_param,
 			MOTOR_CONTROL_TASK_PRIORITY, NULL);
 
+
+	static PIDParam track_param[3];
+	// pos x
+	track_param[0].T = TRACKING_CONTROL_TASK_PERIOD_SEC;
+	track_param[0].Kp = 80.0f;
+	track_param[0].Ki = 0.00f;
+	track_param[0].Kd = 1.0f;
+
+	// pox y
+	track_param[1].T = TRACKING_CONTROL_TASK_PERIOD_SEC;
+	track_param[1].Kp = 60.0f;
+	track_param[1].Ki = 0.0f;
+	track_param[1].Kd = 0.05f;
+
+	// angle
+	track_param[2].T = TRACKING_CONTROL_TASK_PERIOD_SEC;
+	track_param[2].Kp = 3.0f;
+	track_param[2].Ki = 0.05f;
+	track_param[2].Kd = 0.0f;
+	xTaskCreate(tracking_control_task, "track ctrl",
+			TRACKING_CONTROL_TASK_STACK_SIZE, track_param,
+			TRACKING_CONTROL_TASK_PRIORITY, NULL);
+
+
 	xTaskCreate(test_task, "test",
-			256, NULL,
+			1024, NULL,
 			1, NULL);
 
 	control_enable = false;
@@ -82,11 +117,6 @@ void battery_monitor_task(void *)
 	#define ADC_TO_BATTERY_VOLTAGE(x)	((float)x / 4096.0f * 3.3f * 3.0f)
 	float voltage_sum = 0.0;
 	uint8_t voltage_cnt = 0;
-
-	// 初回チェック
-	if (ADC_TO_BATTERY_VOLTAGE(BatteryMonitor_read()) < BATTERY_MONITOR_ALERT_THREHOLD) {
-		abort("Low Battery");
-	}
 
 	TickType_t last_wake_tick = xTaskGetTickCount();
 	while (1) {
@@ -170,17 +200,70 @@ void motor_control_task(void *arg)
 		MotorVoltage motor_voltage = motor_controller.update(ref, enc_value, gyro);
 		if (!control_enable) {
 			motor_voltage.left = motor_voltage.right = 0.0f;
-			float duty[2];
-			duty[0] = 0.0;
-			duty[1] = 0.0;
-			Motor_set_duty(duty);
+			motor_controller.reset();
 		}
 		Motor_set_voltage(&motor_voltage);
 
-		const Velocity measured_velocity = motor_controller.get_measured_velocity();
-		//xQueueSend(machine_velocity_queue, &measured_velocity, MOTOR_CONTROL_TASK_PERIOD);
+		Velocity measured_velocity = motor_controller.get_measured_velocity();
+		measured_velocity.omega = gyro;
+		xQueueSend(machine_velocity_queue, &measured_velocity, MOTOR_CONTROL_TASK_PERIOD);
+	}
+}
 
-		xQueueOverwrite(machine_velocity_queue, &measured_velocity);
+
+
+static void tracking_control_task(void *arg)
+{
+	PIDParam* controller_param = (PIDParam*)arg;
+	TrackingController tracking_controller(controller_param[0], controller_param[1], controller_param[2]);
+	Odometry odometry(MOTOR_CONTROL_TASK_PERIOD_SEC);
+	Trajectory *traj = nullptr;
+	TrajectoryTarget target(TrajectoryTarget::Type::PIVOT, Position(), Velocity());
+	xQueueSend(pos_queue, &odometry.get_pos(), TRACKING_CONTROL_TASK_PERIOD);
+
+	Position last_target_pos;
+
+	TickType_t last_wake_tick = xTaskGetTickCount();
+	while (1) {
+		vTaskDelayUntil(&last_wake_tick, TRACKING_CONTROL_TASK_PERIOD);
+		last_wake_tick = xTaskGetTickCount();
+
+		Velocity measured_velocity;
+		while (xQueueReceive(machine_velocity_queue, &measured_velocity, 0) == pdTRUE) {
+			odometry.update(measured_velocity);
+		}
+		xQueueOverwrite(pos_queue, &odometry.get_pos());
+
+
+		if (traj == nullptr || traj->is_end()) {
+			// 新しい軌道シーケンスをセット
+			if (xQueueReceive(trajectory_queue, &traj, 0) == pdTRUE) {
+				Position current_pos = odometry.get_pos();
+				odometry.reset();
+				if (is_first) {
+					is_first = false;
+				}
+				else {
+					odometry.set_pos(current_pos-last_target_pos);
+				}
+				traj->adjust_start_position(odometry.get_pos());
+				tracking_controller.reset();
+			}
+			else {
+				// 終了を通知
+			}
+		}
+
+		if (traj == nullptr) continue;
+
+		target = traj->next();
+		last_target_pos = target.pos;
+
+		// TODO:target.type==STRAIGHTのときに壁とかで補正をかける
+
+		Velocity motor_ref;
+		motor_ref = tracking_controller.update(odometry.get_pos(), target);
+		xQueueOverwrite(motor_ref_queue, &motor_ref);
 	}
 }
 
@@ -199,27 +282,46 @@ static void abort(const char* error_msg)
 }
 
 
-
 static void test_task(void *)
 {
 	TickType_t last_wake_tick = xTaskGetTickCount();
 
-	Velocity motor_ref(0.0f, 3.0f);
+	Velocity motor_ref(0.0f, 0.0f);
 	xQueueOverwrite(motor_ref_queue, &motor_ref);
 
 	Velocity measured;
 
+	Straight straight1(BLOCK_SIZE*1, 0, STRAIGHT_DEFAULT_VELOCITY);
+	//PivotTurn turn(-PI/2);
+	SlalomTurn slalom(-PI/2);
+	Straight straight2(BLOCK_SIZE*1, STRAIGHT_DEFAULT_VELOCITY, 0);
+	Trajectory *traj;
+
 	while (1) {
-		vTaskDelayUntil(&last_wake_tick, 200);
+		vTaskDelayUntil(&last_wake_tick, 100);
 		last_wake_tick = xTaskGetTickCount();
 
-		if (Uart_rcv_size() != 0) {
-			char ch = Uart_read_byte();
-			if (ch == 's') control_enable = true;
-			else control_enable = false;
-
+		if (ButtonL_get()) {
+			vTaskDelay(2000);
+			MPU6500_calib_offset();
+			vTaskDelay(1000);
+			last_wake_tick = xTaskGetTickCount();
+			control_enable = true;
+			traj = &straight1;
+			xQueueSend(trajectory_queue, &traj, 10);
+			for (int i=0;i<4;i++) {
+				traj = &slalom;
+				xQueueSend(trajectory_queue, &traj, 10);
+			}
+			traj = &straight2;
+			xQueueSend(trajectory_queue, &traj, 10);
 		}
-		xQueuePeek(machine_velocity_queue, &measured, 0);
-		printf("%d %d\n", (int32_t)(measured.v*1000), (int32_t)(measured.omega*1000));
+		if (ButtonR_get()) {
+			control_enable = false;
+		}
+
+		Position pos;
+		xQueuePeek(pos_queue, &pos, 100);
+		printf("%d %d %d\n", (int)(pos.x*1000), (int)(pos.y*1000), (int)(pos.theta/PI*180));
 	}
 }

@@ -8,8 +8,6 @@
 #ifndef CONTROLLER_GEOMETRY_H_
 #define CONTROLLER_GEOMETRY_H_
 
-#include "arm_math.h"
-#include <cmath>
 
 
 struct Velocity {
@@ -18,6 +16,16 @@ struct Velocity {
 
 	Velocity(float _v=0.0f, float _omega=0.0f)
 		:v(_v), omega(_omega){}
+
+	Velocity operator+(const Velocity lhs) const
+	{
+		return Velocity(this->v + lhs.v, this->omega + lhs.omega);
+	}
+
+	Velocity operator-(const Velocity lhs) const
+	{
+		return Velocity(this->v - lhs.v, this->omega - lhs.omega);
+	}
 };
 
 
@@ -26,24 +34,16 @@ struct Position {
 	float y;
 	float theta;
 
-	Position(float _x=0.0f, float _y=0.0f, float _theta=PI/2)
+	Position(float _x=0.0f, float _y=0.0f, float _theta=0.0f)
 		:x(_x), y(_y), theta(_theta) {}
 
-	static float distance(const Position &pos1, const Position &pos2)
+	Position operator+(const Position lhs) const
 	{
-		float dist;
-		const float dx = pos2.x - pos1.x;
-		const float dy = pos2.y - pos1.y;
-		arm_sqrt_f32(dx*dx + dy*dy, &dist);
-
-		return dist;
+		return Position(this->x+lhs.x,this->y+lhs.y,this->theta+lhs.theta);
 	}
-
-	static float look_at(const Position &from, const Position &at)
+	Position operator-(const Position lhs) const
 	{
-		const float dx = at.x - from.x;
-		const float dy = at.y - from.y;
-		return std::atan2(dy, dx);
+		return Position(this->x-lhs.x,this->y-lhs.y,this->theta-lhs.theta);
 	}
 };
 

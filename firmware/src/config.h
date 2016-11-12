@@ -12,11 +12,30 @@
 /************************************************
  * マシンの物理的パラメータ
  ***********************************************/
-#define WHEEL_RADIUS	0.012f
+#define WHEEL_RADIUS	0.01237f
 // 中心からタイヤまでの距離
-#define TREAD_WIDTH 	0.034f
+#define TREAD_WIDTH 	0.03289f
 #define ENC_CNT_PER_ROT	(1024*4*4)
 #define MOTOR_VOLTAGE	7.6f
+
+
+/************************************************
+ * マシンの走行パラメータ
+ ***********************************************/
+#define STRAIGHT_DEFAULT_VELOCITY		0.1f
+#define STRAIGHT_MAX_VELOCITY			0.2f
+#define STRAIGHT_ACCERALATION			1.0f
+#define PIVOT_ROTATION_VELOCITY			3.0f
+#define PIVOT_ROTATION_ACCERALATION		15.0f
+#define SLALOM_VELOCITY					0.1f
+#define SLALOM_ROTATION_VELOCITY		1.5f
+#define SLALOM_ROTATION_ACCERALATION	10.0f
+
+
+/************************************************
+ * フィールドの物理的パラメータ
+ ***********************************************/
+#define BLOCK_SIZE	0.18f
 
 
 /************************************************
@@ -46,6 +65,7 @@
  ***********************************************/
 #define MOTOR_CONTROL_TASK_PRIORITY		1
 #define MOTOR_CONTROL_TASK_PERIOD		1
+#define MOTOR_CONTROL_TASK_PERIOD_SEC	((float)MOTOR_CONTROL_TASK_PERIOD/1000.0f)
 #define MOTOR_CONTROL_TASK_STACK_SIZE	512
 
 
@@ -54,7 +74,8 @@
  ***********************************************/
 #define TRACKING_CONTROL_TASK_PRIORITY		2
 #define TRACKING_CONTROL_TASK_PERIOD		5
+#define TRACKING_CONTROL_TASK_PERIOD_SEC	((float)TRACKING_CONTROL_TASK_PERIOD/1000.0f)
 #define TRACKING_CONTROL_TASK_STACK_SIZE	512
-
+#define TRACKING_CONTROL_OMEGA_FORWARD_GAIN	1.05f
 
 #endif /* CONFIG_H_ */
