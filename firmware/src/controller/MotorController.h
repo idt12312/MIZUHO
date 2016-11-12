@@ -34,8 +34,7 @@ public:
 		const float enc_right_omega = (float)enc_value.right / ENC_CNT_PER_ROT * 2*PI / T;
 
 		v_measured.v = (enc_left_omega + enc_right_omega) / 2 * WHEEL_RADIUS;
-		v_measured.omega = gyro_z;
-		//v_measured.omega = (-enc_left_omega + enc_right_omega) / 2 * WHEEL_RADIUS / TREAD_WIDTH;
+		v_measured.omega = (-enc_left_omega + enc_right_omega) / 2 * WHEEL_RADIUS / TREAD_WIDTH;
 
 		// 角速度はジャイロから得たものを利用し、もう一度左右のタイヤの角速度を計算
 		const float left_omega = (v_measured.v - v_measured.omega*TREAD_WIDTH) / WHEEL_RADIUS;

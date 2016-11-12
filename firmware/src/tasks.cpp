@@ -204,7 +204,8 @@ void motor_control_task(void *arg)
 		}
 		Motor_set_voltage(&motor_voltage);
 
-		const Velocity measured_velocity = motor_controller.get_measured_velocity();
+		Velocity measured_velocity = motor_controller.get_measured_velocity();
+		measured_velocity.omega = gyro;
 		xQueueSend(machine_velocity_queue, &measured_velocity, MOTOR_CONTROL_TASK_PERIOD);
 	}
 }
