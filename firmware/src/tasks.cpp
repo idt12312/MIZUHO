@@ -237,6 +237,7 @@ static void tracking_control_task(void *arg)
 		xQueueOverwrite(pos_queue, &odometry.get_pos());
 
 
+		bool is_idle = false;
 		if (traj == nullptr || traj->is_end()) {
 			// 新しい軌道シーケンスをセット
 			if (xQueueReceive(trajectory_queue, &traj, 0) == pdTRUE) {
@@ -252,11 +253,15 @@ static void tracking_control_task(void *arg)
 				tracking_controller.reset();
 			}
 			else {
-				// 終了を通知
+				is_idle = true;
 			}
 		}
 
-		if (traj == nullptr) continue;
+		if (is_idle) {
+			Velocity motor_ref(0,0);
+			xQueueOverwrite(motor_ref_queue, &motor_ref);
+			continue;
+		}
 
 		target = traj->next();
 		last_target_pos = target.pos;
