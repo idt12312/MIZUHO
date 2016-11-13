@@ -205,7 +205,9 @@ void motor_control_task(void *arg)
 		Motor_set_voltage(&motor_voltage);
 
 		Velocity measured_velocity = motor_controller.get_measured_velocity();
+#if USE_GYRO==1
 		measured_velocity.omega = gyro;
+#endif
 		xQueueSend(machine_velocity_queue, &measured_velocity, MOTOR_CONTROL_TASK_PERIOD);
 	}
 }
