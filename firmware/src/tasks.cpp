@@ -259,11 +259,26 @@ static void tracking_control_task(void *arg)
 		target = traj->next();
 		last_target_pos = target.pos;
 
-		// TODO:target.type==STRAIGHTのときに壁とかで補正をかける
+
+		WallDetect::WallInfo wall_info;
+		xQueuePeek(wall_info_queue, &wall_info, TRACKING_CONTROL_TASK_PERIOD);
+		// 直進時は壁補正をかける
+		if (target.type == TrajectoryTarget::Type::STRAIGHT) {
+			if (wall_info.left && wall_info.right) {
+				// 右によっている　右のセンサの値が大きくなる rl_diffが大きくなる
+				// pos.xを大きくする 原点が左に動いたことになる 機体は左に行こうとする
+				// rl_diffは+-3500のオーダ　中心付近では多分+-1000くらいで変動
+				Position current_pos = odometry.get_pos();
+				current_pos.x += WALL_COMPENSATOR_P_GAIN*wall_info.rl_diff;
+				odometry.set_pos(current_pos);
+			}
+		}
 
 		Velocity motor_ref;
 		motor_ref = tracking_controller.update(odometry.get_pos(), target);
 		xQueueOverwrite(motor_ref_queue, &motor_ref);
+
+		if (traj->is_end()) xSemaphoreGive(trajectory_end_semaphore);
 	}
 }
 
@@ -293,7 +308,8 @@ static void test_task(void *)
 
 	Straight straight1(BLOCK_SIZE*1, 0, STRAIGHT_DEFAULT_VELOCITY);
 	//PivotTurn turn(-PI/2);
-	SlalomTurn slalom(-PI/2);
+	SlalomTurn slalom_right(-PI/2);
+	SlalomTurn slalom_left(PI/2);
 	Straight straight2(BLOCK_SIZE*1, STRAIGHT_DEFAULT_VELOCITY, 0);
 	Trajectory *traj;
 
@@ -301,7 +317,11 @@ static void test_task(void *)
 		vTaskDelayUntil(&last_wake_tick, 100);
 		last_wake_tick = xTaskGetTickCount();
 
-		if (ButtonL_get()) {
+		char ch = 0;
+		if (Uart_rcv_size()) {
+			ch = Uart_read_byte();
+		}
+		if (ButtonL_get() || ch == 's') {
 			vTaskDelay(2000);
 			MPU6500_calib_offset();
 			vTaskDelay(1000);
@@ -309,19 +329,35 @@ static void test_task(void *)
 			control_enable = true;
 			traj = &straight1;
 			xQueueSend(trajectory_queue, &traj, 10);
-			for (int i=0;i<4;i++) {
-				traj = &slalom;
+			xSemaphoreTake(trajectory_end_semaphore, 10000);
+			printf("end straight1\n");
+
+			WallDetect::WallInfo wall_info;
+			xQueuePeek(wall_info_queue, &wall_info,10);
+			if (!wall_info.right) {
+				traj = &slalom_right;
 				xQueueSend(trajectory_queue, &traj, 10);
+				xSemaphoreTake(trajectory_end_semaphore, 10000);
+				printf("end right\n");
+			}
+			else if (!wall_info.left) {
+				traj = &slalom_left;
+				xQueueSend(trajectory_queue, &traj, 10);
+				xSemaphoreTake(trajectory_end_semaphore, 10000);
+				printf("end left\n");
 			}
 			traj = &straight2;
 			xQueueSend(trajectory_queue, &traj, 10);
+			printf("end straight2\n");
+
 		}
-		if (ButtonR_get()) {
+		if (ButtonR_get() || ch == 'q') {
 			control_enable = false;
 		}
 
 		Position pos;
 		xQueuePeek(pos_queue, &pos, 100);
-		printf("%d %d %d\n", (int)(pos.x*1000), (int)(pos.y*1000), (int)(pos.theta/PI*180));
+		//printf("%d %d %d\n", (int)(pos.x*1000), (int)(pos.y*1000), (int)(pos.theta/PI*180));
+
 	}
 }

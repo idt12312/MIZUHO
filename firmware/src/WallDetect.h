@@ -26,6 +26,7 @@ public:
 		bool right;
 		bool left;
 		bool front;
+		int32_t rl_diff;
 	};
 
 	WallInfo update(const QuadratureDemodulator::Result &sensor_value)
@@ -54,6 +55,7 @@ public:
 		wall_info.front = front_cnt == WALL_DETECT_CNT;
 		wall_info.right = right_cnt == WALL_DETECT_CNT;
 		wall_info.left = left_cnt == WALL_DETECT_CNT;
+		wall_info.rl_diff = sensor_value.sensor4 - sensor_value.sensor1;
 
 		return wall_info;
 	}
