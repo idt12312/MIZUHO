@@ -10,6 +10,12 @@
 
 
 /************************************************
+ * デバッグ用の設定
+ ***********************************************/
+#define USE_GYRO	1
+
+
+/************************************************
  * マシンの物理的パラメータ
  ***********************************************/
 #define WHEEL_RADIUS	0.01237f
@@ -55,8 +61,9 @@
 #define WALL_DETECT_TASK_PRIORITY		2
 #define WALL_DETECT_TASK_PERIOD			5
 #define WALL_DETECT_TASK_STACK_SIZE		1024
-#define WALL_DETECT_RL_THREHOLD			3400
-#define WALL_DETECT_FRONT_THRETHOLD		3300
+#define WALL_DETECT_RL_THREHOLD			3300
+#define WALL_DETECT_FRONT_THRETHOLD_NOSIDE		3500
+#define WALL_DETECT_FRONT_THRETHOLD_WITH_SIDE		3600
 #define WALL_DETECT_CNT					4
 
 
@@ -77,5 +84,6 @@
 #define TRACKING_CONTROL_TASK_PERIOD_SEC	((float)TRACKING_CONTROL_TASK_PERIOD/1000.0f)
 #define TRACKING_CONTROL_TASK_STACK_SIZE	512
 #define TRACKING_CONTROL_OMEGA_FORWARD_GAIN	1.05f
+#define WALL_COMPENSATOR_P_GAIN				(0.8f/1000.0f/1000.0f)
 
 #endif /* CONFIG_H_ */
