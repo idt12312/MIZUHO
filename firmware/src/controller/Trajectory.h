@@ -34,14 +34,17 @@ struct TrajectoryTarget {
 class Trajectory {
 protected:
 	bool end;
+	bool adjust_odometry_flag;
 
 public:
 	Trajectory() :end(false) {}
 	virtual ~Trajectory(){}
 
-	inline bool is_end() {return end;}
+	inline bool is_end() const {return end;}
 	virtual TrajectoryTarget next() = 0;
-	virtual void adjust_start_position(const Position &pos) = 0;
+	virtual void reset(const Position &pos) = 0;
+	inline bool get_adjust_odometry_flag() const {return adjust_odometry_flag;}
+	inline void set_adjust_odometry_flag() { adjust_odometry_flag = true; }
 };
 
 
@@ -65,14 +68,14 @@ public:
 		return TrajectoryTarget(TrajectoryTarget::Type::STRAIGHT, odo.get_pos(), next_v);
 	}
 
-	void adjust_start_position(const Position &pos)
+	void reset(const Position &pos)
 	{
 		odo.reset();
 		trapezoid.reset();
 		end = false;
 		while (1) {
 			TrajectoryTarget target = next();
-			if (pos.y < target.pos.y) break;
+			if (std::abs(pos.y) < std::abs(target.pos.y)) break;
 		}
 	}
 
@@ -101,7 +104,7 @@ public:
 		return TrajectoryTarget(TrajectoryTarget::Type::PIVOT, odo.get_pos(), next_v);
 	}
 
-	void adjust_start_position(const Position &pos)
+	void reset(const Position &pos)
 	{
 		odo.reset();
 		trapezoid.reset();
@@ -173,7 +176,7 @@ public:
 		return TrajectoryTarget(TrajectoryTarget::Type::SLALOM, odo.get_pos(), next_v);
 	}
 
-	void adjust_start_position(const Position &pos)
+	void reset(const Position &pos)
 	{
 		odo.reset();
 		trapezoid.reset();
