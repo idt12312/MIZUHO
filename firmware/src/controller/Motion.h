@@ -1,12 +1,12 @@
 /*
- * Trajectory.h
+ * Motion.h
  *
  *  Created on: 2016/11/01
  *      Author: idt12312
  */
 
-#ifndef TRAJECTORY_TRAJECTORY_H_
-#define TRAJECTORY_TRAJECTORY_H_
+#ifndef MOTION_MOTION_H_
+#define MOTION_MOTION_H_
 
 
 #include "Geometry.h"
@@ -15,7 +15,7 @@
 #include "config.h"
 #include <cstdio>
 
-struct TrajectoryTarget {
+struct TrackingTarget {
 	enum class Type {
 		STRAIGHT,
 		SLALOM,
@@ -24,24 +24,24 @@ struct TrajectoryTarget {
 	Position pos;
 	Velocity v;
 
-	TrajectoryTarget(Type _type, const Position &_pos, const Velocity &_v)
+	TrackingTarget(Type _type, const Position &_pos, const Velocity &_v)
 		:  type(_type), pos(_pos), v(_v) {}
 };
 
 
 // 終了したらend=trueにする
 // 終了してもnextが呼ばれたら最後の値を返し続ける実装にする
-class Trajectory {
+class Motion {
 protected:
 	bool end;
 	bool adjust_odometry_flag;
 
 public:
-	Trajectory() :end(false) {}
-	virtual ~Trajectory(){}
+	Motion() :end(false), adjust_odometry_flag(false) {}
+	virtual ~Motion(){}
 
 	inline bool is_end() const {return end;}
-	virtual TrajectoryTarget next() = 0;
+	virtual TrackingTarget next() = 0;
 	virtual void reset(const Position &pos) = 0;
 	inline bool get_adjust_odometry_flag() const {return adjust_odometry_flag;}
 	inline void set_adjust_odometry_flag() { adjust_odometry_flag = true; }
@@ -49,7 +49,7 @@ public:
 
 
 
-class Straight : public Trajectory {
+class Straight : public Motion {
 public:
 	Straight(float L, float v_start=0.0f, float v_end=0.0f)
 		:odo(0.005),
@@ -59,13 +59,13 @@ public:
 
 	virtual ~Straight() {}
 
-	TrajectoryTarget next()
+	TrackingTarget next()
 	{
 		if (trapezoid.is_end()) end = true;
 		const Velocity next_v = Velocity(trapezoid.next(), 0);
 		odo.update(next_v);
 
-		return TrajectoryTarget(TrajectoryTarget::Type::STRAIGHT, odo.get_pos(), next_v);
+		return TrackingTarget(TrackingTarget::Type::STRAIGHT, odo.get_pos(), next_v);
 	}
 
 	void reset(const Position &pos)
@@ -74,7 +74,7 @@ public:
 		trapezoid.reset();
 		end = false;
 		while (1) {
-			TrajectoryTarget target = next();
+			TrackingTarget target = next();
 			if (std::abs(pos.y) < std::abs(target.pos.y)) break;
 		}
 	}
@@ -85,7 +85,7 @@ private:
 };
 
 
-class PivotTurn : public Trajectory {
+class PivotTurn : public Motion {
 public:
 	PivotTurn(float angle)
 		:odo(0.005),
@@ -95,13 +95,13 @@ public:
 
 	virtual ~PivotTurn() {}
 
-	TrajectoryTarget next()
+	TrackingTarget next()
 	{
 		if (trapezoid.is_end()) end = true;
 		const Velocity next_v = Velocity(0, trapezoid.next());
 		odo.update(next_v);
 
-		return TrajectoryTarget(TrajectoryTarget::Type::PIVOT, odo.get_pos(), next_v);
+		return TrackingTarget(TrackingTarget::Type::PIVOT, odo.get_pos(), next_v);
 	}
 
 	void reset(const Position &pos)
@@ -121,7 +121,7 @@ private:
 };
 
 
-class SlalomTurn : public Trajectory {
+class SlalomTurn : public Motion {
 public:
 	SlalomTurn(float angle)
 		:odo(0.005),
@@ -155,7 +155,7 @@ public:
 	}
 	virtual ~SlalomTurn() {}
 
-	TrajectoryTarget next()
+	TrackingTarget next()
 	{
 		Velocity next_v;
 		if (cnt < first_straight_len_cnt) {
@@ -173,7 +173,7 @@ public:
 		}
 		cnt++;
 		odo.update(next_v);
-		return TrajectoryTarget(TrajectoryTarget::Type::SLALOM, odo.get_pos(), next_v);
+		return TrackingTarget(TrackingTarget::Type::SLALOM, odo.get_pos(), next_v);
 	}
 
 	void reset(const Position &pos)
@@ -183,7 +183,7 @@ public:
 		end = false;
 		cnt = 0;
 		while (1) {
-			TrajectoryTarget target = next();
+			TrackingTarget target = next();
 			if (pos.y < target.pos.y) break;
 		}
 	}
@@ -200,4 +200,4 @@ private:
 };
 
 
-#endif /* TRAJECTORY_TRAJECTORY_H_ */
+#endif /* MOTION_MOTION_H_ */

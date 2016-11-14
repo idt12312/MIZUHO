@@ -4,12 +4,12 @@
  *  Created on: 2016/10/31
  *      Author: idt12312
  */
+#include "Motion.h"
 #include "MotorController.h"
 #include "Geometry.h"
 #include "PIDController.h"
 #include "Odometry.h"
 #include "TrackingController.h"
-#include "Trajectory.h"
 #include <stdio.h>
 
 #include "stm32f4xx.h"
@@ -39,9 +39,9 @@
 static xQueueHandle wall_info_queue;
 static xQueueHandle motor_ref_queue;
 static xQueueHandle machine_velocity_queue;
-static xQueueHandle trajectory_queue;
+static xQueueHandle motion_queue;
 static xQueueHandle pos_queue;
-static xSemaphoreHandle trajectory_end_semaphore;
+static xSemaphoreHandle motion_end_semaphore;
 
 static void abort(const char* error_msg);
 static void battery_monitor_task(void *);
@@ -51,15 +51,16 @@ static void tracking_control_task(void *);
 static void test_task(void *);
 
 static bool control_enable = false;
-static bool is_first = true;
+
+
 void Tasks_init()
 {
 	wall_info_queue = xQueueCreate(1, sizeof(WallDetect::WallInfo));
 	motor_ref_queue = xQueueCreate(1, sizeof(Velocity));
 	machine_velocity_queue = xQueueCreate(10, sizeof(Velocity));
-	trajectory_queue = xQueueCreate(10, sizeof(Trajectory*));
+	motion_queue = xQueueCreate(10, sizeof(Motion*));
 	pos_queue = xQueueCreate(1, sizeof(Position));
-	trajectory_end_semaphore = xSemaphoreCreateBinary();
+	motion_end_semaphore = xSemaphoreCreateBinary();
 
 	xTaskCreate(battery_monitor_task, "batt monitor",
 			BATTERY_MONITOR_TASK_STACK_SIZE, NULL,
@@ -219,10 +220,9 @@ static void tracking_control_task(void *arg)
 	PIDParam* controller_param = (PIDParam*)arg;
 	TrackingController tracking_controller(controller_param[0], controller_param[1], controller_param[2]);
 	Odometry odometry(MOTOR_CONTROL_TASK_PERIOD_SEC);
-	Trajectory *traj = nullptr;
-	TrajectoryTarget target(TrajectoryTarget::Type::PIVOT, Position(), Velocity());
-	xQueueSend(pos_queue, &odometry.get_pos(), TRACKING_CONTROL_TASK_PERIOD);
+	bool is_first = true;
 
+	Motion *motion = nullptr;
 	Position last_target_pos;
 
 	TickType_t last_wake_tick = xTaskGetTickCount();
@@ -230,6 +230,8 @@ static void tracking_control_task(void *arg)
 		vTaskDelayUntil(&last_wake_tick, TRACKING_CONTROL_TASK_PERIOD);
 		last_wake_tick = xTaskGetTickCount();
 
+		// motor controllerから送られてきたマシンの速度情報を受け取り、
+		// odometryを更新する
 		Velocity measured_velocity;
 		while (xQueueReceive(machine_velocity_queue, &measured_velocity, 0) == pdTRUE) {
 			odometry.update(measured_velocity);
@@ -237,14 +239,18 @@ static void tracking_control_task(void *arg)
 		xQueueOverwrite(pos_queue, &odometry.get_pos());
 
 
+		// motionが終了していたら新たなmotionをqueueから取り出す
 		bool is_idle = false;
-		if (traj == nullptr || traj->is_end()) {
-			bool adjust_odometry_flag = traj->get_adjust_odometry_flag();
+		if (motion == nullptr || motion->is_end()) {
+			bool adjust_odometry_flag = motion->get_adjust_odometry_flag();
 
-			// 新しい軌道シーケンスをセット
-			if (xQueueReceive(trajectory_queue, &traj, 0) == pdTRUE) {
+			// 新しいMotionをセット
+			if (xQueueReceive(motion_queue, &motion, 0) == pdTRUE) {
 				Position current_pos = odometry.get_pos();
 				odometry.reset();
+
+				// odometryをリセットする
+				// 直前の目標点と現在の座標のずれを計算し、odometryを補正する
 				if (is_first) {
 					is_first = false;
 				}
@@ -256,7 +262,7 @@ static void tracking_control_task(void *arg)
 					}
 					odometry.set_pos(pos_err);
 				}
-				traj->reset(odometry.get_pos());
+				motion->reset(odometry.get_pos());
 				tracking_controller.reset();
 			}
 			else {
@@ -270,29 +276,33 @@ static void tracking_control_task(void *arg)
 			continue;
 		}
 
-		target = traj->next();
+		// 次の目標点をセット
+		TrackingTarget target = motion->next();
 		last_target_pos = target.pos;
 
-
+		// 壁を使ったx方向の補正
+		// odometryのx座標をずらす
+		// 補正は直進時のみかける
 		WallDetect::WallInfo wall_info;
 		xQueuePeek(wall_info_queue, &wall_info, TRACKING_CONTROL_TASK_PERIOD);
-		// 直進時は壁補正をかける
-		if (target.type == TrajectoryTarget::Type::STRAIGHT) {
+		if (target.type == TrackingTarget::Type::STRAIGHT) {
 			if (wall_info.left && wall_info.right) {
 				// 右によっている　右のセンサの値が大きくなる rl_diffが大きくなる
 				// pos.xを大きくする 原点が左に動いたことになる 機体は左に行こうとする
 				// rl_diffは+-3500のオーダ　中心付近では多分+-1000くらいで変動
 				Position current_pos = odometry.get_pos();
-				current_pos.x += WALL_COMPENSATOR_P_GAIN*wall_info.rl_diff;
+				current_pos.x += TRACKING_CONTROL_WALL_P_GAIN * wall_info.rl_diff;
 				odometry.set_pos(current_pos);
 			}
 		}
 
+		// 目標点に追従をする制御
 		Velocity motor_ref;
 		motor_ref = tracking_controller.update(odometry.get_pos(), target);
 		xQueueOverwrite(motor_ref_queue, &motor_ref);
 
-		if (traj->is_end()) xSemaphoreGive(trajectory_end_semaphore);
+		// 1つのmotionが終わったことを通知する
+		if (motion->is_end()) xSemaphoreGive(motion_end_semaphore);
 	}
 }
 
@@ -325,7 +335,7 @@ static void test_task(void *)
 	SlalomTurn slalom_right(-PI/2);
 	SlalomTurn slalom_left(PI/2);
 	Straight straight2(BLOCK_SIZE*0.5, 0, 0);
-	Trajectory *traj;
+	Motion *motion;
 
 	while (1) {
 		vTaskDelayUntil(&last_wake_tick, 100);
@@ -342,18 +352,18 @@ static void test_task(void *)
 			last_wake_tick = xTaskGetTickCount();
 			control_enable = true;
 
-			traj = &straight2;
-			xQueueSend(trajectory_queue, &traj, 10);
+			motion = &straight2;
+			xQueueSend(motion_queue, &motion, 10);
 
-			traj = &turn;
-			xQueueSend(trajectory_queue, &traj, 10);
+			motion = &turn;
+			xQueueSend(motion_queue, &motion, 10);
 
 			straight1.set_adjust_odometry_flag();
-			traj = &straight1;
-			xQueueSend(trajectory_queue, &traj, 10);
+			motion = &straight1;
+			xQueueSend(motion_queue, &motion, 10);
 
-			traj = &straight2;
-			xQueueSend(trajectory_queue, &traj, 10);
+			motion = &straight2;
+			xQueueSend(motion_queue, &motion, 10);
 		}
 		if (ButtonR_get() || ch == 'q') {
 			control_enable = false;

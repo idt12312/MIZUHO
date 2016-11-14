@@ -1,5 +1,5 @@
 /*
- * PositionController.h
+ * TracklingController.h
  *
  *  Created on: 2016/11/02
  *      Author: idt12312
@@ -9,8 +9,8 @@
 #define TRACKINGCONTROLLER_H_
 
 
+#include "Motion.h"
 #include "Geometry.h"
-#include "Trajectory.h"
 #include "PIDController.h"
 #include "config.h"
 
@@ -58,13 +58,13 @@ public:
 		:pos_x_controller(pos_x_param), pos_y_controller(pos_y_param), angle_controller(angle_param)
 	{}
 
-	Velocity update(const Position &pos, const TrajectoryTarget &ref)
+	Velocity update(const Position &pos, const TrackingTarget &ref)
 	{
-		if (ref.type == TrajectoryTarget::Type::SLALOM || ref.type == TrajectoryTarget::Type::STRAIGHT) {
+		if (ref.type == TrackingTarget::Type::SLALOM || ref.type == TrackingTarget::Type::STRAIGHT) {
 			// 速度のフィードフォワード + 位置のフィードバック
 			return Velocity(ref.v.v, ref.v.omega*TRACKING_CONTROL_OMEGA_FORWARD_GAIN) + track_slalom(pos, ref.pos);
 		}
-		else if (ref.type == TrajectoryTarget::Type::PIVOT) {
+		else if (ref.type == TrackingTarget::Type::PIVOT) {
 			// 速度のフィードフォワード + 位置のフィードバック
 			return ref.v + track_pivot(pos, ref.pos);
 		}
