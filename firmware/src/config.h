@@ -12,7 +12,9 @@
 /************************************************
  * デバッグ用の設定
  ***********************************************/
-#define USE_GYRO	1
+#define ODOMETRY_USE_GYRO				0
+#define PRINT_WALL_SENSOR_RAW_VALUE		0
+#define ENABLE_BATTERY_MONITOR_ABORT	1
 
 
 /************************************************
@@ -51,7 +53,7 @@
 #define BATTERY_MONITOR_TASK_PERIOD		2000
 #define BATTERY_MONITOR_TASK_STACK_SIZE 256
 #define BATTERY_MONITOR_AVE_CNT			5
-#define BATTERY_MONITOR_ALERT_THREHOLD	7.4f
+#define BATTERY_MONITOR_ALERT_THREHOLD	7.3f
 #define ADC_TO_BATTERY_VOLTAGE(x)		((float)x / 4096.0f * 3.3f * 3.0f)
 
 

@@ -115,7 +115,6 @@ void Tasks_init()
 // 数サンプルの平均値が基準値以下の場合はエラーを出す
 void battery_monitor_task(void *)
 {
-	#define ADC_TO_BATTERY_VOLTAGE(x)	((float)x / 4096.0f * 3.3f * 3.0f)
 	float voltage_sum = 0.0;
 	uint8_t voltage_cnt = 0;
 
@@ -133,9 +132,11 @@ void battery_monitor_task(void *)
 			voltage_cnt = 0;
 			printf("battery voltage: %d\n", (int16_t)(battery_voltage*1000));
 
+#if ENABLE_BATTERY_MONITOR_ABORT==1
 			if (battery_voltage < BATTERY_MONITOR_ALERT_THREHOLD) {
 				abort("Low Battery");
 			}
+#endif
 		}
 	}
 }
@@ -144,7 +145,6 @@ void battery_monitor_task(void *)
 
 void wall_detect_task(void *)
 {
-	SensorRawData raw;
 	QuadratureDemodulator demodulator(64,4);
 	WallDetect wall_detector;
 
@@ -154,14 +154,18 @@ void wall_detect_task(void *)
 		last_wake_tick = xTaskGetTickCount();
 
 		// 赤外線センサの読み取りを開始し、終了をタスクをブロックして待機
+		SensorRawData raw;
 		IrSensor_start();
 		IrSensor_block(WALL_DETECT_TASK_PERIOD);
 		IrSensor_get(&raw);
 
 		// データ処理
 		QuadratureDemodulator::Result result = demodulator.calc(&raw);
-		//printf("raw:%5u %5u %5u %5u\n", result.sensor1,result.sensor2,result.sensor3,result.sensor4);
 		WallDetect::WallInfo wall_info = wall_detector.update(result);
+
+#if PRINT_WALL_SENSOR_RAW_VALUE==1
+		printf("raw:%5u %5u %5u %5u\n", result.sensor1,result.sensor2,result.sensor3,result.sensor4);
+#endif
 
 		xQueueOverwrite(wall_info_queue, &wall_info);
 
@@ -206,7 +210,7 @@ void motor_control_task(void *arg)
 		Motor_set_voltage(&motor_voltage);
 
 		Velocity measured_velocity = motor_controller.get_measured_velocity();
-#if USE_GYRO==1
+#if ODOMETRY_USE_GYRO==1
 		measured_velocity.omega = gyro;
 #endif
 		xQueueSend(machine_velocity_queue, &measured_velocity, MOTOR_CONTROL_TASK_PERIOD);
