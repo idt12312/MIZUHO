@@ -53,6 +53,9 @@
 									<listOptionValue builtIn="false" value="../libs/FreeRTOS/Source/include"/>
 									<listOptionValue builtIn="false" value="../libs/FreeRTOS/Source/portable"/>
 									<listOptionValue builtIn="false" value="../src/controller"/>
+									<listOptionValue builtIn="false" value="../src/wallsensor"/>
+									<listOptionValue builtIn="false" value="../src/config"/>
+									<listOptionValue builtIn="false" value="../src/task"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.defs.710238471" name="Defined symbols (-D)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.defs" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="STM32F40_41xxx"/>
@@ -72,6 +75,9 @@
 									<listOptionValue builtIn="false" value="../libs/FreeRTOS/Source/include"/>
 									<listOptionValue builtIn="false" value="../libs/FreeRTOS/Source/portable"/>
 									<listOptionValue builtIn="false" value="../src/controller"/>
+									<listOptionValue builtIn="false" value="../src/wallsensor"/>
+									<listOptionValue builtIn="false" value="../src/config"/>
+									<listOptionValue builtIn="false" value="../src/task"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.std.1534813025" name="Language standard" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.std" useByScannerDiscovery="true" value="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.std.gnu11" valueType="enumerated"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.defs.187988862" name="Defined symbols (-D)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.defs" useByScannerDiscovery="false" valueType="definedSymbols">
@@ -93,6 +99,9 @@
 									<listOptionValue builtIn="false" value="../libs/FreeRTOS/Source/include"/>
 									<listOptionValue builtIn="false" value="../libs/FreeRTOS/Source/portable"/>
 									<listOptionValue builtIn="false" value="../src/controller"/>
+									<listOptionValue builtIn="false" value="../src/wallsensor"/>
+									<listOptionValue builtIn="false" value="../src/config"/>
+									<listOptionValue builtIn="false" value="../src/task"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.std.852837399" name="Language standard" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.std" useByScannerDiscovery="true" value="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.std.gnucpp11" valueType="enumerated"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.defs.816680398" name="Defined symbols (-D)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.defs" useByScannerDiscovery="false" valueType="definedSymbols">
@@ -153,7 +162,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMSIS/DSP_Lib|FreeRTOS/Source/portable/heap_5.c|FreeRTOS/Source/portable/heap_4.c|FreeRTOS/Source/portable/heap_3.c|FreeRTOS/Source/portable/heap_1.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="libs"/>
+						<entry excluding="CMSIS/DSP_Lib|FreeRTOS/Source/portable/heap_3.c|FreeRTOS/Source/portable/heap_1.c|FreeRTOS/Source/portable/heap_5.c|FreeRTOS/Source/portable/heap_4.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="libs"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>
@@ -211,6 +220,9 @@
 									<listOptionValue builtIn="false" value="../libs/FreeRTOS/Source/include"/>
 									<listOptionValue builtIn="false" value="../libs/FreeRTOS/portable"/>
 									<listOptionValue builtIn="false" value="../src/control"/>
+									<listOptionValue builtIn="false" value="../src/wallsensor"/>
+									<listOptionValue builtIn="false" value="../src/config"/>
+									<listOptionValue builtIn="false" value="../src/task"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.defs.1390560300" name="Defined symbols (-D)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.defs" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="STM32F40_41xxx"/>
@@ -231,6 +243,9 @@
 									<listOptionValue builtIn="false" value="../libs/FreeRTOS/Source/include"/>
 									<listOptionValue builtIn="false" value="../libs/FreeRTOS/portable"/>
 									<listOptionValue builtIn="false" value="../src/control"/>
+									<listOptionValue builtIn="false" value="../src/wallsensor"/>
+									<listOptionValue builtIn="false" value="../src/config"/>
+									<listOptionValue builtIn="false" value="../src/task"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.std.759962033" name="Language standard" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.std" useByScannerDiscovery="true" value="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.std.gnu11" valueType="enumerated"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.defs.892140393" name="Defined symbols (-D)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.defs" useByScannerDiscovery="false" valueType="definedSymbols">
@@ -252,6 +267,9 @@
 									<listOptionValue builtIn="false" value="../libs/FreeRTOS/Source/include"/>
 									<listOptionValue builtIn="false" value="../libs/FreeRTOS/portable"/>
 									<listOptionValue builtIn="false" value="../src/control"/>
+									<listOptionValue builtIn="false" value="../src/wallsensor"/>
+									<listOptionValue builtIn="false" value="../src/config"/>
+									<listOptionValue builtIn="false" value="../src/task"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.std.1001633845" name="Language standard" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.std" useByScannerDiscovery="true" value="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.std.gnucpp11" valueType="enumerated"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.defs.1611933812" name="Defined symbols (-D)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.defs" useByScannerDiscovery="false" valueType="definedSymbols">
@@ -306,7 +324,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMSIS/DSP_Lib|FreeRTOS/Source/portable/heap_5.c|FreeRTOS/Source/portable/heap_4.c|FreeRTOS/Source/portable/heap_3.c|FreeRTOS/Source/portable/heap_1.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="libs"/>
+						<entry excluding="CMSIS/DSP_Lib|FreeRTOS/Source/portable/heap_3.c|FreeRTOS/Source/portable/heap_1.c|FreeRTOS/Source/portable/heap_5.c|FreeRTOS/Source/portable/heap_4.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="libs"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>
