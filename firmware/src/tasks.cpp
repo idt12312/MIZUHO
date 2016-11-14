@@ -70,38 +70,13 @@ void Tasks_init()
 			WALL_DETECT_TASK_STACK_SIZE, NULL,
 			WALL_DETECT_TASK_PRIORITY, NULL);
 
-	static PIDParam pid_param;
-	pid_param.T = MOTOR_CONTROL_TASK_PERIOD_SEC;
-	pid_param.Kp = 1.0f;
-	pid_param.Ki = 0.01f;
-	pid_param.Kd = 0.0001f;
 	xTaskCreate(motor_control_task, "motor ctrl",
-			MOTOR_CONTROL_TASK_STACK_SIZE, &pid_param,
+			MOTOR_CONTROL_TASK_STACK_SIZE, NULL,
 			MOTOR_CONTROL_TASK_PRIORITY, NULL);
 
-
-	static PIDParam track_param[3];
-	// pos x
-	track_param[0].T = TRACKING_CONTROL_TASK_PERIOD_SEC;
-	track_param[0].Kp = 80.0f;
-	track_param[0].Ki = 0.00f;
-	track_param[0].Kd = 1.0f;
-
-	// pox y
-	track_param[1].T = TRACKING_CONTROL_TASK_PERIOD_SEC;
-	track_param[1].Kp = 60.0f;
-	track_param[1].Ki = 0.0f;
-	track_param[1].Kd = 0.05f;
-
-	// angle
-	track_param[2].T = TRACKING_CONTROL_TASK_PERIOD_SEC;
-	track_param[2].Kp = 3.0f;
-	track_param[2].Ki = 0.05f;
-	track_param[2].Kd = 0.0f;
 	xTaskCreate(tracking_control_task, "track ctrl",
-			TRACKING_CONTROL_TASK_STACK_SIZE, track_param,
+			TRACKING_CONTROL_TASK_STACK_SIZE, NULL,
 			TRACKING_CONTROL_TASK_PRIORITY, NULL);
-
 
 	xTaskCreate(test_task, "test",
 			1024, NULL,
@@ -181,13 +156,9 @@ void wall_detect_task(void *)
 
 
 
-void motor_control_task(void *arg)
+void motor_control_task(void *)
 {
-	PIDParam *control_param = (PIDParam*)arg;
-	MotorController motor_controller(*control_param);
-
-	Velocity dummy;
-	xQueueSend(machine_velocity_queue, &dummy, 0);
+	MotorController motor_controller;
 
 	TickType_t last_wake_tick = xTaskGetTickCount();
 	while (1) {
@@ -219,10 +190,9 @@ void motor_control_task(void *arg)
 
 
 
-static void tracking_control_task(void *arg)
+static void tracking_control_task(void *)
 {
-	PIDParam* controller_param = (PIDParam*)arg;
-	TrackingController tracking_controller(controller_param[0], controller_param[1], controller_param[2]);
+	TrackingController tracking_controller;
 	Odometry odometry(MOTOR_CONTROL_TASK_PERIOD_SEC);
 	bool is_first = true;
 

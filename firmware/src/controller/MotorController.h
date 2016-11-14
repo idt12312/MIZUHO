@@ -15,6 +15,7 @@
 #include "config.h"
 #include "arm_math.h"
 
+
 // エンコーダの値を受け取り、モータへの出力電圧を計算する
 // 現在の速度も返す
 class MotorController {
@@ -25,8 +26,18 @@ private:
 	Velocity v_measured;
 
 public:
-	MotorController(const PIDParam& param)
-		:left_motor_controller(param), right_motor_controller(param), T(param.T) {}
+	MotorController()
+		:T(MOTOR_CONTROL_TASK_PERIOD_SEC)
+	{
+		PIDParam pid_param;
+		pid_param.T = MOTOR_CONTROL_TASK_PERIOD_SEC;
+		pid_param.Kp = MOTOR_CONTROL_P_GAIN;
+		pid_param.Ki = MOTOR_CONTROL_I_GAIN;
+		pid_param.Kd = MOTOR_CONTROL_D_GAIN;
+
+		left_motor_controller.set_param(pid_param);
+		right_motor_controller.set_param(pid_param);
+	}
 
 	MotorVoltage update(const Velocity &ref, const EncValue& enc_value, float gyro_z)
 	{

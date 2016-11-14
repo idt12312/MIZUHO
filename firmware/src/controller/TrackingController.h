@@ -54,9 +54,27 @@ private:
 	}
 
 public:
-	TrackingController(const PIDParam &pos_x_param, const PIDParam &pos_y_param, const PIDParam &angle_param)
-		:pos_x_controller(pos_x_param), pos_y_controller(pos_y_param), angle_controller(angle_param)
-	{}
+	TrackingController()
+	{
+		PIDParam pos_x_controller_param;
+		pos_x_controller_param.T  = TRACKING_CONTROL_TASK_PERIOD_SEC;
+		pos_x_controller_param.Kp = TRACKING_CONTROL_X_P_GAIN;
+		pos_x_controller_param.Kd = TRACKING_CONTROL_X_D_GAIN;
+		pos_x_controller.set_param(pos_x_controller_param);
+
+		PIDParam pos_y_controller_param;
+		pos_y_controller_param.T  = TRACKING_CONTROL_TASK_PERIOD_SEC;
+		pos_y_controller_param.Kp = TRACKING_CONTROL_Y_P_GAIN;
+		pos_y_controller_param.Kd = TRACKING_CONTROL_Y_D_GAIN;
+		pos_y_controller.set_param(pos_y_controller_param);
+
+		PIDParam angle_controller_param;
+		angle_controller_param.T  = TRACKING_CONTROL_TASK_PERIOD_SEC;
+		angle_controller_param.Kp = TRACKING_CONTROL_ANGLE_P_GAIN;
+		angle_controller_param.Ki = TRACKING_CONTROL_ANGLE_I_GAIN;
+		angle_controller_param.Kd = TRACKING_CONTROL_ANGLE_D_GAIN;
+		angle_controller.set_param(angle_controller_param);
+	}
 
 	Velocity update(const Position &pos, const TrackingTarget &ref)
 	{

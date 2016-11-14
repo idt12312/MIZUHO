@@ -70,22 +70,33 @@
 
 
 /************************************************
- * モータ制御(姿勢制御)タスクの設定
+ * モータ制御(姿勢制御)の設定
  ***********************************************/
 #define MOTOR_CONTROL_TASK_PRIORITY		1
 #define MOTOR_CONTROL_TASK_PERIOD		1
 #define MOTOR_CONTROL_TASK_PERIOD_SEC	((float)MOTOR_CONTROL_TASK_PERIOD/1000.0f)
 #define MOTOR_CONTROL_TASK_STACK_SIZE	512
+#define MOTOR_CONTROL_P_GAIN			1.0f
+#define MOTOR_CONTROL_I_GAIN			0.01f
+#define MOTOR_CONTROL_D_GAIN			0.0001f
 
 
 /************************************************
- * 軌道追従タスクの設定
+ * 軌道追従制御の設定
  ***********************************************/
 #define TRACKING_CONTROL_TASK_PRIORITY		2
 #define TRACKING_CONTROL_TASK_PERIOD		5
 #define TRACKING_CONTROL_TASK_PERIOD_SEC	((float)TRACKING_CONTROL_TASK_PERIOD/1000.0f)
 #define TRACKING_CONTROL_TASK_STACK_SIZE	512
 #define TRACKING_CONTROL_OMEGA_FORWARD_GAIN	1.05f
-#define WALL_COMPENSATOR_P_GAIN				(0.8f/1000.0f/1000.0f)
+#define TRACKING_CONTROL_X_P_GAIN			80.0f
+#define TRACKING_CONTROL_X_D_GAIN			1.0f
+#define TRACKING_CONTROL_Y_P_GAIN			60.0f
+#define TRACKING_CONTROL_Y_D_GAIN			0.05f
+#define TRACKING_CONTROL_ANGLE_P_GAIN		3.0f
+#define TRACKING_CONTROL_ANGLE_I_GAIN		0.05f
+#define TRACKING_CONTROL_ANGLE_D_GAIN		0.0f
+#define TRACKING_CONTROL_WALL_P_GAIN		(0.8f/1000.0f/1000.0f)
+
 
 #endif /* CONFIG_H_ */
