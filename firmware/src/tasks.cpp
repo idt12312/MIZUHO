@@ -237,7 +237,10 @@ static void tracking_control_task(void *arg)
 		xQueueOverwrite(pos_queue, &odometry.get_pos());
 
 
+		bool is_idle = false;
 		if (traj == nullptr || traj->is_end()) {
+			bool adjust_odometry_flag = traj->get_adjust_odometry_flag();
+
 			// 新しい軌道シーケンスをセット
 			if (xQueueReceive(trajectory_queue, &traj, 0) == pdTRUE) {
 				Position current_pos = odometry.get_pos();
@@ -246,17 +249,26 @@ static void tracking_control_task(void *arg)
 					is_first = false;
 				}
 				else {
-					odometry.set_pos(current_pos-last_target_pos);
+					Position pos_err = current_pos-last_target_pos;
+					if (adjust_odometry_flag) {
+						pos_err.y = 0.0f;
+						pos_err.theta = 0.0f;
+					}
+					odometry.set_pos(pos_err);
 				}
-				traj->adjust_start_position(odometry.get_pos());
+				traj->reset(odometry.get_pos());
 				tracking_controller.reset();
 			}
 			else {
-				// 終了を通知
+				is_idle = true;
 			}
 		}
 
-		if (traj == nullptr) continue;
+		if (is_idle) {
+			Velocity motor_ref(0,0);
+			xQueueOverwrite(motor_ref_queue, &motor_ref);
+			continue;
+		}
 
 		target = traj->next();
 		last_target_pos = target.pos;
@@ -308,11 +320,11 @@ static void test_task(void *)
 
 	Velocity measured;
 
-	Straight straight1(BLOCK_SIZE*1, 0, STRAIGHT_DEFAULT_VELOCITY);
-	//PivotTurn turn(-PI/2);
+	Straight straight1(-BLOCK_SIZE*0.5, 0, 0);
+	PivotTurn turn(PI);
 	SlalomTurn slalom_right(-PI/2);
 	SlalomTurn slalom_left(PI/2);
-	Straight straight2(BLOCK_SIZE*1, STRAIGHT_DEFAULT_VELOCITY, 0);
+	Straight straight2(BLOCK_SIZE*0.5, 0, 0);
 	Trajectory *traj;
 
 	while (1) {
@@ -329,29 +341,19 @@ static void test_task(void *)
 			vTaskDelay(1000);
 			last_wake_tick = xTaskGetTickCount();
 			control_enable = true;
-			traj = &straight1;
-			xQueueSend(trajectory_queue, &traj, 10);
-			xSemaphoreTake(trajectory_end_semaphore, 10000);
-			printf("end straight1\n");
 
-			WallDetect::WallInfo wall_info;
-			xQueuePeek(wall_info_queue, &wall_info,10);
-			if (!wall_info.right) {
-				traj = &slalom_right;
-				xQueueSend(trajectory_queue, &traj, 10);
-				xSemaphoreTake(trajectory_end_semaphore, 10000);
-				printf("end right\n");
-			}
-			else if (!wall_info.left) {
-				traj = &slalom_left;
-				xQueueSend(trajectory_queue, &traj, 10);
-				xSemaphoreTake(trajectory_end_semaphore, 10000);
-				printf("end left\n");
-			}
 			traj = &straight2;
 			xQueueSend(trajectory_queue, &traj, 10);
-			printf("end straight2\n");
 
+			traj = &turn;
+			xQueueSend(trajectory_queue, &traj, 10);
+
+			straight1.set_adjust_odometry_flag();
+			traj = &straight1;
+			xQueueSend(trajectory_queue, &traj, 10);
+
+			traj = &straight2;
+			xQueueSend(trajectory_queue, &traj, 10);
 		}
 		if (ButtonR_get() || ch == 'q') {
 			control_enable = false;
@@ -359,7 +361,7 @@ static void test_task(void *)
 
 		Position pos;
 		xQueuePeek(pos_queue, &pos, 100);
-		//printf("%d %d %d\n", (int)(pos.x*1000), (int)(pos.y*1000), (int)(pos.theta/PI*180));
+		printf("%d %d %d\n", (int)(pos.x*1000), (int)(pos.y*1000), (int)(pos.theta/PI*180));
 
 	}
 }

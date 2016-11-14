@@ -34,7 +34,12 @@ private:
 		const float ref_y_on_robot_coord = -sin_theta * x_e + cos_theta * y_e;
 
 		ret.v = pos_y_controller.update(0, ref_y_on_robot_coord);
-		ret.omega = pos_x_controller.update(0, -ref_x_on_robot_coord);
+		if (ref.y >= 0) {
+			ret.omega = pos_x_controller.update(0, -ref_x_on_robot_coord);
+		}
+		else {
+			ret.omega = pos_x_controller.update(0, ref_x_on_robot_coord);
+		}
 
 		return ret;
 	}
