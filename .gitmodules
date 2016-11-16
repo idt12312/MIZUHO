@@ -1,0 +1,3 @@
+[submodule "firmware/maze_solver"]
+	path = firmware/maze_solver
+	url = https://idt12312@github.com/idt12312/MazeSolver2015.git
