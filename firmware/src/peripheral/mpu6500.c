@@ -72,8 +72,8 @@
 #define MPU6500_RA_ZA_OFFSET_L		0x7E
 
 #define MPU6500_DEVICE_ID			0x70
-// ジャイロのゲインがフルスケールで250dpsの時の値
-#define GYRO_FACTOR  131.0f
+// ジャイロのゲインがフルスケールで2000dpsの時の値
+#define GYRO_FACTOR  16.4f
 
 #define GYRO_OFFSET_CNT 100
 
@@ -137,9 +137,9 @@ void MPU6500_init()
 	// FIFOは使わない
 	spi_write_reg(MPU6500_RA_CONFIG, 0x00);
 
-	// Gyroのフルスケールを+-250dpsに設定
+	// Gyroのフルスケールを+-2000dpsに設定
 	// FCHOICE_B = b00 : Band=8600Hz, Delay=0.064ms, Fs=32kHz
-	spi_write_reg(MPU6500_RA_GYRO_CONFIG, 0x00);
+	spi_write_reg(MPU6500_RA_GYRO_CONFIG, 0x18);
 
 	Spi_set_high_speed_mode();
 }
