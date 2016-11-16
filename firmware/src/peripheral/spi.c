@@ -18,7 +18,8 @@
 #define SPI_RCC_ENABLE()			RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE)
 // SPIのSCKのクロックの設定
 // SPIのバス(APB1,APB2)のクロックを何分周(2,4,8,16,32,64,128,256)するかで指定
-#define SPI_BAUD_PRESCALER			SPI_BaudRatePrescaler_64
+#define SPI_LOW_SPED_BAUD_PRESCALER			SPI_BaudRatePrescaler_64
+#define SPI_HIGH_SPED_BAUD_PRESCALER		SPI_BaudRatePrescaler_4
 
 #define SPI_PORT					GPIOB
 #define SPI_PORT_RCC_ENABLE()		RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE)
@@ -75,17 +76,7 @@ void Spi_init()
 
 	SPI_RCC_ENABLE();
 
-	// SCKはアイドル時に1, 後縁で読み取り
-	SPI_InitTypeDef  SPI_InitStructure;
-	SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
-	SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
-	SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;
-	SPI_InitStructure.SPI_CPOL = SPI_CPOL_High;
-	SPI_InitStructure.SPI_CPHA = SPI_CPHA_2Edge;
-	SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;
-	SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BAUD_PRESCALER;
-	SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
-	SPI_Init(SPI_DEICE, &SPI_InitStructure);
+	Spi_set_low_speed_mode();
 
 	SPI_Cmd(SPI_DEICE, ENABLE);
 
@@ -103,6 +94,38 @@ void Spi_cs_assert()
 void Spi_cs_dessert()
 {
 	GPIO_SetBits(SPI_CS_PORT, SPI_CS_PIN);
+}
+
+
+void Spi_set_high_speed_mode()
+{
+	// SCKはアイドル時に1, 後縁で読み取り
+	SPI_InitTypeDef  SPI_InitStructure;
+	SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
+	SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
+	SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;
+	SPI_InitStructure.SPI_CPOL = SPI_CPOL_High;
+	SPI_InitStructure.SPI_CPHA = SPI_CPHA_2Edge;
+	SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;
+	SPI_InitStructure.SPI_BaudRatePrescaler = SPI_HIGH_SPED_BAUD_PRESCALER;
+	SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
+	SPI_Init(SPI_DEICE, &SPI_InitStructure);
+}
+
+
+void Spi_set_low_speed_mode()
+{
+	// SCKはアイドル時に1, 後縁で読み取り
+	SPI_InitTypeDef  SPI_InitStructure;
+	SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
+	SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
+	SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;
+	SPI_InitStructure.SPI_CPOL = SPI_CPOL_High;
+	SPI_InitStructure.SPI_CPHA = SPI_CPHA_2Edge;
+	SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;
+	SPI_InitStructure.SPI_BaudRatePrescaler = SPI_LOW_SPED_BAUD_PRESCALER;
+	SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
+	SPI_Init(SPI_DEICE, &SPI_InitStructure);
 }
 
 

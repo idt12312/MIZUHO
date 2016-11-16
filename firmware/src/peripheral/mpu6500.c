@@ -117,6 +117,7 @@ static void spi_read_reg(uint8_t reg_addr, uint8_t *buffer, size_t size)
 
 void MPU6500_init()
 {
+	Spi_set_low_speed_mode();
 	// リセット
 	spi_write_reg(MPU6500_RA_PWR_MGMT_1, 0x80);
 	for (volatile int i=0;i<100000;i++);
@@ -140,6 +141,7 @@ void MPU6500_init()
 	// FCHOICE_B = b00 : Band=8600Hz, Delay=0.064ms, Fs=32kHz
 	spi_write_reg(MPU6500_RA_GYRO_CONFIG, 0x00);
 
+	Spi_set_high_speed_mode();
 }
 
 
