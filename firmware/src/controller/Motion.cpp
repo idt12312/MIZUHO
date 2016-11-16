@@ -16,7 +16,8 @@
  * 直進
  ***********************************************/
 Straight::Straight(float L, float v_start, float v_end)
-:odo(0.005),
+: Motion(Position(0,L,0)),
+  odo(0.005),
  trapezoid(TRACKING_CONTROL_TASK_PERIOD_SEC, L, STRAIGHT_ACCERALATION, STRAIGHT_MAX_VELOCITY, v_start, v_end)
 {
 
@@ -56,7 +57,8 @@ void Straight::reset(const Position &pos)
  * 超信地旋回
  ***********************************************/
 PivotTurn::PivotTurn(float angle)
-:odo(0.005),
+:Motion(Position(0,0,angle)),
+ odo(0.005),
  trapezoid(TRACKING_CONTROL_TASK_PERIOD_SEC, angle, PIVOT_ROTATION_ACCERALATION, PIVOT_ROTATION_VELOCITY, 0, 0)
 {
 }
@@ -88,7 +90,8 @@ void PivotTurn::reset(const Position &pos)
  * スラロームターン
  ***********************************************/
 SlalomTurn::SlalomTurn(float angle)
-:odo(0.005),
+:Motion(Position((BLOCK_SIZE*(angle>0?1.0f:-1.0f), BLOCK_SIZE/2, angle))),
+ odo(0.005),
  v(SLALOM_VELOCITY),
  trapezoid(TRACKING_CONTROL_TASK_PERIOD_SEC, angle, SLALOM_ROTATION_ACCERALATION, SLALOM_ROTATION_VELOCITY, 0, 0)
 {

@@ -8,9 +8,7 @@
 #ifndef TASKS_H_
 #define TASKS_H_
 
-
-void Tasks_init();
-
+void Tasks_abort(const char* error_msg);
 
 
 #endif /* TASKS_H_ */

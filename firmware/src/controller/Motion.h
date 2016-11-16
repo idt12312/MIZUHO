@@ -38,7 +38,7 @@ struct TrackingTarget {
 // 終了してもnextが呼ばれたら最後の値を返し続ける実装にする
 class Motion {
 public:
-	Motion() :end(false), adjust_odometry_flag(false) {}
+	Motion(const Position &_goal_pos) :end(false), adjust_odometry_flag(false), goal_pos(_goal_pos) {}
 	virtual ~Motion(){}
 
 	inline bool is_end() const { return end; }
@@ -46,10 +46,12 @@ public:
 	virtual void reset(const Position &pos) = 0;
 	inline bool get_adjust_odometry_flag() const { return adjust_odometry_flag; }
 	inline void set_adjust_odometry_flag() { adjust_odometry_flag = true; }
+	inline Position get_gial_pos() const { return goal_pos; }
 
 protected:
 	bool end;
 	bool adjust_odometry_flag;
+	Position goal_pos;
 };
 
 

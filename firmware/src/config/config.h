@@ -12,9 +12,10 @@
 /************************************************
  * デバッグ用の設定
  ***********************************************/
-#define ODOMETRY_USE_GYRO				0
+#define ODOMETRY_USE_GYRO				1
 #define PRINT_WALL_SENSOR_RAW_VALUE		0
 #define ENABLE_BATTERY_MONITOR_ABORT	1
+#define ENABLE_BATTERY_MONITOR_PRINT	1
 
 
 /************************************************
@@ -25,6 +26,8 @@
 #define TREAD_WIDTH 	0.03289f
 #define ENC_CNT_PER_ROT	(1024*4*4)
 #define MOTOR_VOLTAGE	7.6f
+
+#define AXLE_TO_TAIL	1.0f
 
 
 /************************************************
@@ -49,7 +52,7 @@
 /************************************************
  * バッテリー監視タスクの設定
  ***********************************************/
-#define BATTERY_MONITOR_TASK_PRIORITY	3
+#define BATTERY_MONITOR_TASK_PRIORITY	4
 #define BATTERY_MONITOR_TASK_PERIOD		2000
 #define BATTERY_MONITOR_TASK_STACK_SIZE 256
 #define BATTERY_MONITOR_AVE_CNT			5
@@ -97,6 +100,14 @@
 #define TRACKING_CONTROL_ANGLE_I_GAIN		0.05f
 #define TRACKING_CONTROL_ANGLE_D_GAIN		0.0f
 #define TRACKING_CONTROL_WALL_P_GAIN		(0.8f/1000.0f/1000.0f)
+
+
+/************************************************
+ * Top Taskの設定
+ ***********************************************/
+#define TOP_TASK_PRIORITY		3
+#define TOP_TASK_STACK_SIZE		1024
+
 
 
 #endif /* CONFIG_H_ */
