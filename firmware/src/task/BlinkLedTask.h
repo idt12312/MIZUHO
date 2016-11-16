@@ -14,7 +14,7 @@
 class BlinkLedTask: public TaskBase {
 public:
 	BlinkLedTask(uint8_t _led_num, uint32_t _period)
-	:TaskBase("blink led", 1, 256), led_num(_led_num), period(_period)
+	:TaskBase("blink led", 5, 256), led_num(_led_num), period(_period)
 	{}
 	virtual ~BlinkLedTask(){}
 

@@ -20,7 +20,7 @@
 #include "MotorControlTask.h"
 #include "MotionControlTask.h"
 #include "TopTask.h"
-
+#include "ButtonTask.h"
 
 static BlinkLedTask blink_led_task(LED_5, 500);
 static BatteryMonitorTask battery_monitor_task;
@@ -28,6 +28,7 @@ static WallDetectTask wall_detect_task;
 static MotorControlTask motor_control_task;
 static MotionControlTask motion_control_task;
 static TopTask top_task;
+static ButtonTask button_task;
 
 void* __dso_handle = 0;
 
@@ -65,12 +66,15 @@ static void tasks_init()
 	motor_control_task.create_task();
 	motion_control_task.create_task();
 	top_task.create_task();
+	button_task.create_task();
 
 	motion_control_task.set_motor_control_task(&motor_control_task);
 	motion_control_task.set_wall_detec_task(&wall_detect_task);
 
 	top_task.set_motor_control_task(&motor_control_task);
 	top_task.set_motion_control_task(&motion_control_task);
+
+	button_task.set_motor_control_task(&motor_control_task);
 }
 
 
