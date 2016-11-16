@@ -20,6 +20,8 @@ extern "C"
 void Spi_init();
 void Spi_cs_assert();
 void Spi_cs_dessert();
+void Spi_set_high_speed_mode();
+void Spi_set_low_speed_mode();
 void Spi_start_xchg(const uint8_t *tx_buf, uint8_t *rx_buf, size_t size);
 bool Spi_busy();
 void Spi_block(uint32_t block_time);
