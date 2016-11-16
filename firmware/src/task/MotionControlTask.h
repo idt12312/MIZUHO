@@ -27,6 +27,8 @@ public:
 	void push_motion(Motion &motion);
 	void wait_finish_motion();
 
+	void reset();
+
 
 private:
 	xSemaphoreHandle motion_end_semaphore;
@@ -41,6 +43,10 @@ private:
 
 	Motion *motion = nullptr;
 	Position last_goal_pos;
+
+	bool req_reset_odometry = true;
+	bool is_first = true;
+	bool is_wall_detect_point_notified = true;
 
 	virtual void task();
 	void update_odometry();

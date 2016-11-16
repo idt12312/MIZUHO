@@ -29,6 +29,20 @@ MotionControlTask::~MotionControlTask()
 }
 
 
+void MotionControlTask::reset()
+{
+	odometry.reset();
+	tracking_controller.reset();
+
+	motion = nullptr;
+	last_goal_pos = Position(0,0,0);
+
+	is_wall_detect_point_notified = true;
+	is_first = true;
+	req_reset_odometry = true;
+}
+
+
 Position MotionControlTask::get_pos()
 {
 	Position pos;
@@ -46,6 +60,8 @@ void MotionControlTask::push_motion(Motion &motion)
 
 void MotionControlTask::wait_finish_motion()
 {
+	// ブロックする前にセマフォをクリアしておく(念のため)
+	xQueueReset(motion_end_semaphore);
 	xSemaphoreTake(motion_end_semaphore, portMAX_DELAY);
 }
 
@@ -66,12 +82,13 @@ void MotionControlTask::update_motion()
 {
 	// 新しいMotionをセット
 	if (xQueueReceive(motion_queue, &motion, 0) == pdTRUE) {
+		is_wall_detect_point_notified = false;
 		Position current_pos = odometry.get_pos();
 		odometry.reset();
 
 		// odometryをリセットする
 		// 直前の目標点と現在の座標のずれを計算し、odometryを補正する
-		Position pos_err = current_pos;
+		Position pos_err;
 		// 直進
 		if (-PI/4 < current_pos.theta && current_pos.theta < PI/4) {
 			pos_err.x = current_pos.x;
@@ -98,9 +115,15 @@ void MotionControlTask::update_motion()
 		}
 
 		// 壁に当てて補正する時に使う
-		if (motion->get_adjust_odometry_flag()) {
+		if (req_reset_odometry) {
+			req_reset_odometry = false;
 			pos_err.y = 0.0f;
 			pos_err.theta = 0.0f;
+		}
+
+		if (is_first) {
+			pos_err = Position(0,0,0);
+			is_first = false;
 		}
 
 		odometry.set_pos(pos_err);
@@ -162,10 +185,36 @@ void MotionControlTask::task()
 		const Velocity motor_ref = tracking_controller.update(odometry.get_pos(), target);
 		motor_control_task->set_reference(motor_ref);
 
+
+
+		const Position goal_pos = motion->get_gial_pos();
+		if (!is_wall_detect_point_notified) {
+			if (target.type == TrackingTarget::Type::STRAIGHT) {
+				const float to_goal_dist = std::abs(goal_pos.y - odometry.get_pos().y);
+				if (to_goal_dist < WALL_DETECT_POINT) {
+					xSemaphoreGive(motion_end_semaphore);
+					is_wall_detect_point_notified = true;
+				}
+			}
+			else if (target.type == TrackingTarget::Type::SLALOM) {
+				const float to_goal_dist = std::abs(goal_pos.x - odometry.get_pos().x);
+				if (to_goal_dist < WALL_DETECT_POINT) {
+					xSemaphoreGive(motion_end_semaphore);
+					is_wall_detect_point_notified = true;
+				}
+			}
+			else {
+				if (motion->is_end()) {
+					xSemaphoreGive(motion_end_semaphore);
+					is_wall_detect_point_notified = true;
+				}
+			}
+		}
+
 		// 1つのmotionが終わったことを通知する
 		if (motion->is_end()) {
-			xSemaphoreGive(motion_end_semaphore);
-			last_goal_pos = motion->get_gial_pos();
+			last_goal_pos = goal_pos;
+			req_reset_odometry = motion->is_req_reset_odometry();
 			motion = nullptr;
 		}
 	}

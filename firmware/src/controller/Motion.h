@@ -21,7 +21,8 @@ struct TrackingTarget {
 	enum class Type {
 		STRAIGHT,
 		SLALOM,
-		PIVOT
+		PIVOT,
+		NO_CONTROL
 	} type;
 	Position pos;
 	Velocity v;
@@ -38,19 +39,18 @@ struct TrackingTarget {
 // 終了してもnextが呼ばれたら最後の値を返し続ける実装にする
 class Motion {
 public:
-	Motion(const Position &_goal_pos) :end(false), adjust_odometry_flag(false), goal_pos(_goal_pos) {}
+	Motion(const Position &_goal_pos, bool _req_reset_odometry) :end(false), req_reset_odometry(_req_reset_odometry), goal_pos(_goal_pos) {}
 	virtual ~Motion(){}
 
 	inline bool is_end() const { return end; }
 	virtual TrackingTarget next() = 0;
 	virtual void reset(const Position &pos) = 0;
-	inline bool get_adjust_odometry_flag() const { return adjust_odometry_flag; }
-	inline void set_adjust_odometry_flag() { adjust_odometry_flag = true; }
+	inline bool is_req_reset_odometry() const { return req_reset_odometry; }
 	inline Position get_gial_pos() const { return goal_pos; }
 
 protected:
 	bool end;
-	bool adjust_odometry_flag;
+	bool req_reset_odometry;
 	Position goal_pos;
 };
 
@@ -60,7 +60,7 @@ protected:
  ***********************************************/
 class Straight : public Motion {
 public:
-	Straight(float L, float v_start, float v_end);
+	Straight(float L, float v_start, float v_end, bool _req_reset_odometry=false);
 	virtual ~Straight();
 
 	TrackingTarget next();
@@ -69,6 +69,7 @@ public:
 private:
 	Odometry odo;
 	Trapezoid trapezoid;
+	size_t cnt = 0;
 };
 
 
@@ -77,7 +78,7 @@ private:
  ***********************************************/
 class PivotTurn : public Motion {
 public:
-	PivotTurn(float angle);
+	PivotTurn(float angle, bool _req_reset_odometry=false);
 	virtual ~PivotTurn();
 
 	TrackingTarget next();
@@ -86,6 +87,7 @@ public:
 private:
 	Odometry odo;
 	Trapezoid trapezoid;
+	size_t cnt = 0;
 };
 
 
@@ -94,7 +96,7 @@ private:
  ***********************************************/
 class SlalomTurn : public Motion {
 public:
-	SlalomTurn(float angle);
+	SlalomTurn(float angle, bool _req_reset_odometry=false);
 	virtual ~SlalomTurn();
 
 	TrackingTarget next();

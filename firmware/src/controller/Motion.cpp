@@ -15,8 +15,8 @@
 /************************************************
  * 直進
  ***********************************************/
-Straight::Straight(float L, float v_start, float v_end)
-: Motion(Position(0,L,0)),
+Straight::Straight(float L, float v_start, float v_end, bool _req_reset_odometry)
+: Motion(Position(0,L,0), _req_reset_odometry),
   odo(0.005),
  trapezoid(TRACKING_CONTROL_TASK_PERIOD_SEC, L, STRAIGHT_ACCERALATION, STRAIGHT_MAX_VELOCITY, v_start, v_end)
 {
@@ -32,7 +32,20 @@ Straight::~Straight()
 
 TrackingTarget Straight::next()
 {
-	if (trapezoid.is_end()) end = true;
+	if (trapezoid.is_end()) {
+		if (req_reset_odometry) {
+			if (cnt > STOP_TIME_AFTER_MOTION) {
+				end = true;
+			}
+			else {
+				cnt++;
+			}
+			return TrackingTarget(TrackingTarget::Type::NO_CONTROL, goal_pos, Velocity(0,0));
+		}
+		else {
+			end = true;
+		}
+	}
 	const Velocity next_v = Velocity(trapezoid.next(), 0);
 	odo.update(next_v);
 
@@ -45,6 +58,8 @@ void Straight::reset(const Position &pos)
 	odo.reset();
 	trapezoid.reset();
 	end = false;
+	cnt = 0;
+
 	while (1) {
 		TrackingTarget target = next();
 		if (std::abs(pos.y) < std::abs(target.pos.y)) break;
@@ -56,8 +71,8 @@ void Straight::reset(const Position &pos)
 /************************************************
  * 超信地旋回
  ***********************************************/
-PivotTurn::PivotTurn(float angle)
-:Motion(Position(0,0,angle)),
+PivotTurn::PivotTurn(float angle, bool _req_reset_odometry)
+:Motion(Position(0,0,angle), _req_reset_odometry),
  odo(0.005),
  trapezoid(TRACKING_CONTROL_TASK_PERIOD_SEC, angle, PIVOT_ROTATION_ACCERALATION, PIVOT_ROTATION_VELOCITY, 0, 0)
 {
@@ -70,7 +85,16 @@ PivotTurn::~PivotTurn()
 
 TrackingTarget PivotTurn::next()
 {
-	if (trapezoid.is_end()) end = true;
+	if (trapezoid.is_end()) {
+		if (cnt > STOP_TIME_AFTER_MOTION) {
+			end = true;
+		}
+		else {
+			cnt++;
+		}
+		return TrackingTarget(TrackingTarget::Type::PIVOT, goal_pos, Velocity(0,0));
+	}
+
 	const Velocity next_v = Velocity(0, trapezoid.next());
 	odo.update(next_v);
 
@@ -82,6 +106,7 @@ void PivotTurn::reset(const Position &pos)
 	odo.reset();
 	trapezoid.reset();
 	end = false;
+	cnt = 0;
 }
 
 
@@ -89,8 +114,8 @@ void PivotTurn::reset(const Position &pos)
 /************************************************
  * スラロームターン
  ***********************************************/
-SlalomTurn::SlalomTurn(float angle)
-:Motion(Position((BLOCK_SIZE*(angle>0?1.0f:-1.0f), BLOCK_SIZE/2, angle))),
+SlalomTurn::SlalomTurn(float angle, bool _req_reset_odometry)
+:Motion(Position( 0.5*BLOCK_SIZE*((angle>0)?-1.0f:1.0f), BLOCK_SIZE/2, angle), _req_reset_odometry),
  odo(0.005),
  v(SLALOM_VELOCITY),
  trapezoid(TRACKING_CONTROL_TASK_PERIOD_SEC, angle, SLALOM_ROTATION_ACCERALATION, SLALOM_ROTATION_VELOCITY, 0, 0)

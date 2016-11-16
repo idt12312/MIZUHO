@@ -34,6 +34,8 @@
 /************************************************
  * マシンの走行パラメータ
  ***********************************************/
+#define WALL_DETECT_POINT				0.01f
+#define STOP_TIME_AFTER_MOTION			50
 #define STRAIGHT_DEFAULT_VELOCITY		0.1f
 #define STRAIGHT_MAX_VELOCITY			0.2f
 #define STRAIGHT_ACCERALATION			1.0f
@@ -97,8 +99,8 @@
 #define TRACKING_CONTROL_X_D_GAIN			1.0f
 #define TRACKING_CONTROL_Y_P_GAIN			60.0f
 #define TRACKING_CONTROL_Y_D_GAIN			0.05f
-#define TRACKING_CONTROL_ANGLE_P_GAIN		3.0f
-#define TRACKING_CONTROL_ANGLE_I_GAIN		0.05f
+#define TRACKING_CONTROL_ANGLE_P_GAIN		10.0f
+#define TRACKING_CONTROL_ANGLE_I_GAIN		0.1f
 #define TRACKING_CONTROL_ANGLE_D_GAIN		0.0f
 #define TRACKING_CONTROL_WALL_P_GAIN		(0.8f/1000.0f/1000.0f)
 
