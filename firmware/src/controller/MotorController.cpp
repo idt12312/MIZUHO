@@ -33,18 +33,18 @@ MotorController::~MotorController()
 
 MotorVoltage MotorController::update(const Velocity &ref, const EncValue& enc_value, float gyro_z)
 {
-	const float enc_left_omega = (float)enc_value.left / ENC_CNT_PER_ROT * 2*PI / T;
-	const float enc_right_omega = (float)enc_value.right / ENC_CNT_PER_ROT * 2*PI / T;
+	const float enc_left_omega = (float)enc_value.left / MACHINE_ENC_CNT_PER_ROT * 2*PI / T;
+	const float enc_right_omega = (float)enc_value.right / MACHINE_ENC_CNT_PER_ROT * 2*PI / T;
 
-	v_measured.v = (enc_left_omega + enc_right_omega) / 2 * WHEEL_RADIUS;
-	v_measured.omega = (-enc_left_omega + enc_right_omega) / 2 * WHEEL_RADIUS / TREAD_WIDTH;
+	v_measured.v = (enc_left_omega + enc_right_omega) / 2 * MACHINE_WHEEL_RADIUS;
+	v_measured.omega = (-enc_left_omega + enc_right_omega) / 2 * MACHINE_WHEEL_RADIUS / MACHINE_TREAD_WIDTH;
 
 	// 角速度はジャイロから得たものを利用し、もう一度左右のタイヤの角速度を計算
-	const float left_omega = (v_measured.v - v_measured.omega*TREAD_WIDTH) / WHEEL_RADIUS;
-	const float right_omega = (v_measured.v + v_measured.omega*TREAD_WIDTH) / WHEEL_RADIUS;
+	const float left_omega = (v_measured.v - v_measured.omega*MACHINE_TREAD_WIDTH) / MACHINE_WHEEL_RADIUS;
+	const float right_omega = (v_measured.v + v_measured.omega*MACHINE_TREAD_WIDTH) / MACHINE_WHEEL_RADIUS;
 
-	const float ref_left_omega = (ref.v - ref.omega*TREAD_WIDTH) / WHEEL_RADIUS;
-	const float ref_right_omega = (ref.v + ref.omega*TREAD_WIDTH) / WHEEL_RADIUS;
+	const float ref_left_omega = (ref.v - ref.omega*MACHINE_TREAD_WIDTH) / MACHINE_WHEEL_RADIUS;
+	const float ref_right_omega = (ref.v + ref.omega*MACHINE_TREAD_WIDTH) / MACHINE_WHEEL_RADIUS;
 
 	MotorVoltage motor_voltage;
 	motor_voltage.left = left_motor_controller.update(left_omega, ref_left_omega);

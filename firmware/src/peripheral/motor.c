@@ -136,8 +136,8 @@ void Motor_set_duty(const float duty[2])
 void Motor_set_voltage(const MotorVoltage *volt)
 {
 	float duty[2];
-	duty[0] = volt->left / MOTOR_VOLTAGE;
-	duty[1] = volt->right / MOTOR_VOLTAGE;
+	duty[0] = volt->left / MACHINE_MOTOR_VOLTAGE;
+	duty[1] = volt->right / MACHINE_MOTOR_VOLTAGE;
 
 	Motor_set_duty(duty);
 }
