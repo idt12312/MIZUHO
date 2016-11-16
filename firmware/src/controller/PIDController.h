@@ -20,14 +20,6 @@ struct PIDParam {
 };
 
 class PIDController {
-private:
-	// 設定パラメータ
-	PIDParam param;
-
-	// 内部状態
-	float error_sum = 0.0f;
-	float prev_error = 0.0f;
-
 public:
 	PIDController() {}
 	PIDController(const PIDParam& _param)
@@ -62,8 +54,17 @@ public:
 	}
 
 	void set_param(const PIDParam& _param) { param = _param; }
-
 	inline const PIDParam &get_param() { return param; }
+
+
+private:
+	// 設定パラメータ
+	PIDParam param;
+
+	// 内部状態
+	float error_sum = 0.0f;
+	float prev_error = 0.0f;
+
 };
 
 #endif /* PIDCONTROLLER_H_ */

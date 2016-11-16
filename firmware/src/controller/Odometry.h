@@ -13,14 +13,6 @@
 #include "Geometry.h"
 
 class Odometry {
-private:
-	const float T;
-	Position pos;
-
-	float prev_dx = 0.0f;
-	float prev_dy = 0.0f;
-	float prev_omega = 0.0f;
-
 public:
 	Odometry(float _T) :T(_T) {}
 	virtual ~Odometry() {}
@@ -48,6 +40,15 @@ public:
 
 	void set_pos(const Position& _pos) { pos = _pos; }
 	inline const Position& get_pos() const { return pos;}
+
+
+private:
+	const float T;
+	Position pos;
+
+	float prev_dx = 0.0f;
+	float prev_dy = 0.0f;
+	float prev_omega = 0.0f;
 };
 
 #endif /* ODOMETRY_H_ */

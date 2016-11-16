@@ -12,7 +12,10 @@
 /************************************************
  * デバッグ用の設定
  ***********************************************/
-#define USE_GYRO	1
+#define ODOMETRY_USE_GYRO				1
+#define PRINT_WALL_SENSOR_RAW_VALUE		0
+#define ENABLE_BATTERY_MONITOR_ABORT	1
+#define ENABLE_BATTERY_MONITOR_PRINT	1
 
 
 /************************************************
@@ -23,6 +26,8 @@
 #define TREAD_WIDTH 	0.03289f
 #define ENC_CNT_PER_ROT	(1024*4*4)
 #define MOTOR_VOLTAGE	7.6f
+
+#define AXLE_TO_TAIL	1.0f
 
 
 /************************************************
@@ -47,11 +52,11 @@
 /************************************************
  * バッテリー監視タスクの設定
  ***********************************************/
-#define BATTERY_MONITOR_TASK_PRIORITY	3
+#define BATTERY_MONITOR_TASK_PRIORITY	4
 #define BATTERY_MONITOR_TASK_PERIOD		2000
 #define BATTERY_MONITOR_TASK_STACK_SIZE 256
 #define BATTERY_MONITOR_AVE_CNT			5
-#define BATTERY_MONITOR_ALERT_THREHOLD	7.4f
+#define BATTERY_MONITOR_ALERT_THREHOLD	7.3f
 #define ADC_TO_BATTERY_VOLTAGE(x)		((float)x / 4096.0f * 3.3f * 3.0f)
 
 
@@ -68,22 +73,41 @@
 
 
 /************************************************
- * モータ制御(姿勢制御)タスクの設定
+ * モータ制御(姿勢制御)の設定
  ***********************************************/
 #define MOTOR_CONTROL_TASK_PRIORITY		1
 #define MOTOR_CONTROL_TASK_PERIOD		1
 #define MOTOR_CONTROL_TASK_PERIOD_SEC	((float)MOTOR_CONTROL_TASK_PERIOD/1000.0f)
 #define MOTOR_CONTROL_TASK_STACK_SIZE	512
+#define MOTOR_CONTROL_P_GAIN			1.0f
+#define MOTOR_CONTROL_I_GAIN			0.01f
+#define MOTOR_CONTROL_D_GAIN			0.0001f
 
 
 /************************************************
- * 軌道追従タスクの設定
+ * 軌道追従制御の設定
  ***********************************************/
 #define TRACKING_CONTROL_TASK_PRIORITY		2
 #define TRACKING_CONTROL_TASK_PERIOD		5
 #define TRACKING_CONTROL_TASK_PERIOD_SEC	((float)TRACKING_CONTROL_TASK_PERIOD/1000.0f)
 #define TRACKING_CONTROL_TASK_STACK_SIZE	512
 #define TRACKING_CONTROL_OMEGA_FORWARD_GAIN	1.05f
-#define WALL_COMPENSATOR_P_GAIN				(0.8f/1000.0f/1000.0f)
+#define TRACKING_CONTROL_X_P_GAIN			80.0f
+#define TRACKING_CONTROL_X_D_GAIN			1.0f
+#define TRACKING_CONTROL_Y_P_GAIN			60.0f
+#define TRACKING_CONTROL_Y_D_GAIN			0.05f
+#define TRACKING_CONTROL_ANGLE_P_GAIN		3.0f
+#define TRACKING_CONTROL_ANGLE_I_GAIN		0.05f
+#define TRACKING_CONTROL_ANGLE_D_GAIN		0.0f
+#define TRACKING_CONTROL_WALL_P_GAIN		(0.8f/1000.0f/1000.0f)
+
+
+/************************************************
+ * Top Taskの設定
+ ***********************************************/
+#define TOP_TASK_PRIORITY		3
+#define TOP_TASK_STACK_SIZE		1024
+
+
 
 #endif /* CONFIG_H_ */
