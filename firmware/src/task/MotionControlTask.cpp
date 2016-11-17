@@ -190,14 +190,14 @@ void MotionControlTask::task()
 		const Position goal_pos = motion->get_gial_pos();
 		if (!is_wall_detect_point_notified) {
 			if (target.type == TrackingTarget::Type::STRAIGHT) {
-				const float to_goal_dist = std::abs(goal_pos.y - odometry.get_pos().y);
+				const float to_goal_dist = std::abs(goal_pos.y) - std::abs(odometry.get_pos().y);
 				if (to_goal_dist < WALL_DETECT_POINT) {
 					xSemaphoreGive(motion_end_semaphore);
 					is_wall_detect_point_notified = true;
 				}
 			}
 			else if (target.type == TrackingTarget::Type::SLALOM) {
-				const float to_goal_dist = std::abs(goal_pos.x - odometry.get_pos().x);
+				const float to_goal_dist = std::abs(goal_pos.x) - std::abs(odometry.get_pos().x);
 				if (to_goal_dist < WALL_DETECT_POINT) {
 					xSemaphoreGive(motion_end_semaphore);
 					is_wall_detect_point_notified = true;

@@ -18,7 +18,8 @@
 Straight::Straight(float L, float v_start, float v_end, bool _req_reset_odometry)
 : Motion(Position(0,L,0), _req_reset_odometry),
   odo(0.005),
- trapezoid(TRACKING_CONTROL_TASK_PERIOD_SEC, L, STRAIGHT_ACCERALATION, STRAIGHT_MAX_VELOCITY, v_start, v_end)
+ trapezoid(TRACKING_CONTROL_TASK_PERIOD_SEC, L, STRAIGHT_ACCERALATION, STRAIGHT_MAX_VELOCITY, v_start, v_end),
+ _v_end(v_end)
 {
 
 }
@@ -49,6 +50,10 @@ TrackingTarget Straight::next()
 	const Velocity next_v = Velocity(trapezoid.next(), 0);
 	odo.update(next_v);
 
+	if (end) {
+		return TrackingTarget(TrackingTarget::Type::NO_CONTROL, goal_pos, _v_end);
+	}
+
 	return TrackingTarget(TrackingTarget::Type::STRAIGHT, odo.get_pos(), next_v);
 }
 
@@ -62,8 +67,14 @@ void Straight::reset(const Position &pos)
 
 	while (1) {
 		TrackingTarget target = next();
-		if (std::abs(pos.y) < std::abs(target.pos.y)) break;
+		if (goal_pos.y > 0) {
+			if (pos.y < target.pos.y) break;
+		}
+		else {
+			if (pos.y > target.pos.y) break;
+		}
 	}
+
 }
 
 
@@ -166,8 +177,13 @@ TrackingTarget SlalomTurn::next()
 		end = true;
 		next_v = Velocity(v,0);
 	}
-	cnt++;
+	if (!end) cnt++;
 	odo.update(next_v);
+
+	if (end) {
+		return TrackingTarget(TrackingTarget::Type::NO_CONTROL, goal_pos, next_v);
+	}
+
 	return TrackingTarget(TrackingTarget::Type::SLALOM, odo.get_pos(), next_v);
 }
 

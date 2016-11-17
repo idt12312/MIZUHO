@@ -84,6 +84,11 @@ Velocity TrackingController::update(const Position &pos, const TrackingTarget &r
 		// 速度のフィードフォワード + 位置のフィードバック
 		return Velocity(ref.v.v, ref.v.omega*TRACKING_CONTROL_OMEGA_FORWARD_GAIN) + track_pivot(pos, ref.pos);
 	}
+	else if (ref.type == TrackingTarget::Type::NO_CONTROL) {
+		// 速度のフィードフォワード + 位置のフィードバック
+		return ref.v;
+	}
+
 	else {
 		return Velocity();
 	}

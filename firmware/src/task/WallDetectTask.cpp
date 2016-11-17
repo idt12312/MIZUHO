@@ -54,13 +54,5 @@ void WallDetectTask::task()
 		printf("raw:%5u %5u %5u %5u\n", result.sensor1,result.sensor2,result.sensor3,result.sensor4);
 #endif
 
-
-		// 壁の状態をLEDで表示
-		if (wall_info.front) Led_on(LED_2 | LED_3);
-		else Led_off(LED_2 | LED_3);
-		if (wall_info.left) Led_on(LED_1);
-		else Led_off(LED_1);
-		if (wall_info.right) Led_on(LED_4);
-		else Led_off(LED_4);
 	}
 }

@@ -73,6 +73,7 @@ static void tasks_init()
 
 	top_task.set_motor_control_task(&motor_control_task);
 	top_task.set_motion_control_task(&motion_control_task);
+	top_task.set_wall_detect_task(&wall_detect_task);
 
 	button_task.set_motor_control_task(&motor_control_task);
 }

@@ -52,11 +52,13 @@ float Trapezoid::next()
 	else if (cnt < N1+N2+N3) {
 		v = v_end + ax*dt*(N1+N2+N3-cnt);
 	}
-	else {
+
+	if (!end) cnt++;
+
+	if (cnt >= N1+N2+N3) {
 		end = true;
 		v = v_end;
 	}
-	cnt++;
 
 	return dir*v;
 }

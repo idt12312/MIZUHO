@@ -28,22 +28,22 @@
 #define MACHINE_MOTOR_VOLTAGE	7.6f
 
 #define MACHINE_AXLE_TO_TAIL	0.034f
-#define MACHINE_TAIL_COMP_LEN	0.001f
+#define MACHINE_TAIL_COMP_LEN	0.015f
 
 
 /************************************************
  * マシンの走行パラメータ
  ***********************************************/
-#define WALL_DETECT_POINT				0.01f
+#define WALL_DETECT_POINT				0.005f
 #define STOP_TIME_AFTER_MOTION			50
-#define STRAIGHT_DEFAULT_VELOCITY		0.1f
-#define STRAIGHT_MAX_VELOCITY			0.2f
+#define STRAIGHT_DEFAULT_VELOCITY		0.3f
+#define STRAIGHT_MAX_VELOCITY			0.32f
 #define STRAIGHT_ACCERALATION			1.0f
-#define PIVOT_ROTATION_VELOCITY			3.0f
-#define PIVOT_ROTATION_ACCERALATION		15.0f
-#define SLALOM_VELOCITY					0.1f
-#define SLALOM_ROTATION_VELOCITY		1.5f
-#define SLALOM_ROTATION_ACCERALATION	10.0f
+#define PIVOT_ROTATION_VELOCITY			10.0f
+#define PIVOT_ROTATION_ACCERALATION		30.0f
+#define SLALOM_VELOCITY					0.3f
+#define SLALOM_ROTATION_VELOCITY		10.0f
+#define SLALOM_ROTATION_ACCERALATION	50.0f
 
 
 /************************************************
@@ -68,11 +68,11 @@
  ***********************************************/
 #define WALL_DETECT_TASK_PRIORITY		2
 #define WALL_DETECT_TASK_PERIOD			5
-#define WALL_DETECT_TASK_STACK_SIZE		1024
+#define WALL_DETECT_TASK_STACK_SIZE		512
 #define WALL_DETECT_RL_THREHOLD			3300
 #define WALL_DETECT_FRONT_THRETHOLD_NOSIDE		3500
-#define WALL_DETECT_FRONT_THRETHOLD_WITH_SIDE		3600
-#define WALL_DETECT_CNT					4
+#define WALL_DETECT_FRONT_THRETHOLD_WITH_SIDE		3500
+#define WALL_DETECT_CNT					2
 
 
 /************************************************
@@ -82,9 +82,9 @@
 #define MOTOR_CONTROL_TASK_PERIOD		1
 #define MOTOR_CONTROL_TASK_PERIOD_SEC	((float)MOTOR_CONTROL_TASK_PERIOD/1000.0f)
 #define MOTOR_CONTROL_TASK_STACK_SIZE	512
-#define MOTOR_CONTROL_P_GAIN			1.0f
+#define MOTOR_CONTROL_P_GAIN			0.8f
 #define MOTOR_CONTROL_I_GAIN			0.01f
-#define MOTOR_CONTROL_D_GAIN			0.0001f
+#define MOTOR_CONTROL_D_GAIN			0.0f //0.0001f/2
 
 
 /************************************************
@@ -95,21 +95,21 @@
 #define TRACKING_CONTROL_TASK_PERIOD_SEC	((float)TRACKING_CONTROL_TASK_PERIOD/1000.0f)
 #define TRACKING_CONTROL_TASK_STACK_SIZE	512
 #define TRACKING_CONTROL_OMEGA_FORWARD_GAIN	1.05f
-#define TRACKING_CONTROL_X_P_GAIN			80.0f
-#define TRACKING_CONTROL_X_D_GAIN			1.0f
-#define TRACKING_CONTROL_Y_P_GAIN			60.0f
-#define TRACKING_CONTROL_Y_D_GAIN			0.05f
+#define TRACKING_CONTROL_X_P_GAIN			10.0f
+#define TRACKING_CONTROL_X_D_GAIN			20.0f
+#define TRACKING_CONTROL_Y_P_GAIN			5.0f
+#define TRACKING_CONTROL_Y_D_GAIN			0.001f
 #define TRACKING_CONTROL_ANGLE_P_GAIN		10.0f
 #define TRACKING_CONTROL_ANGLE_I_GAIN		0.1f
 #define TRACKING_CONTROL_ANGLE_D_GAIN		0.0f
-#define TRACKING_CONTROL_WALL_P_GAIN		(0.8f/1000.0f/1000.0f)
+#define TRACKING_CONTROL_WALL_P_GAIN		(0.0f/1000.0f/1000.0f)
 
 
 /************************************************
  * Top Taskの設定
  ***********************************************/
 #define TOP_TASK_PRIORITY		3
-#define TOP_TASK_STACK_SIZE		1024
+#define TOP_TASK_STACK_SIZE		1024*4
 
 
 
