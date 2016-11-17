@@ -57,6 +57,12 @@ private:
 	static SlalomTurn search_turn_right;
 	static SlalomTurn search_turn_left;
 
+	static Straight fast_straight_start;
+	static Straight fast_straight_end;
+	static SlalomTurn fast_turn_right;
+	static SlalomTurn fast_turn_left;
+	static Straight fast_straight[16];
+
 	bool is_start_block = true;
 	int prev_wall_cnt = 0;
 
