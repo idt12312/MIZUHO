@@ -114,9 +114,6 @@ IndexVec TopTask::getRobotPosion()
 
 void TopTask::robotMove(const Direction &dir)
 {
-
-
-
 	int8_t robot_dir_index = 0;
 	while (1) {
 		if (robot_dir.byte == NORTH << robot_dir_index) break;
@@ -137,14 +134,18 @@ void TopTask::robotMove(const Direction &dir)
 			is_start_block = false;
 		}
 		else motion_control_task->push_motion(search_straight);
+
+		motion_control_task->wait_finish_motion();
 	}
 	// 右
 	else if (dir_diff == 1 || dir_diff == -3) {
 		motion_control_task->push_motion(search_turn_right);
+		motion_control_task->wait_finish_motion();
 	}
 	// 左
 	else if (dir_diff == -1 || dir_diff == 3) {
 		motion_control_task->push_motion(search_turn_left);
+		motion_control_task->wait_finish_motion();
 	}
 	// 180度ターン
 	else  {
@@ -162,6 +163,7 @@ void TopTask::robotMove(const Direction &dir)
 			motion_control_task->push_motion(search_back);
 			motion_control_task->wait_finish_motion();
 			motion_control_task->push_motion(search_straight_start);
+			motion_control_task->wait_finish_motion();
 		}
 		else {
 			motion_control_task->push_motion(search_straight_end);
@@ -169,6 +171,7 @@ void TopTask::robotMove(const Direction &dir)
 			motion_control_task->push_motion(search_turn180);
 			motion_control_task->wait_finish_motion();
 			motion_control_task->push_motion(search_straight_half_start);
+			motion_control_task->wait_finish_motion();
 		}
 	}
 
@@ -189,14 +192,129 @@ void TopTask::robotMove(const Direction &dir)
 }
 
 
+void TopTask::robotMove(const Operation &op)
+{
+	switch (op.op) {
+	case Operation::FORWARD:
+		if (is_start_block) {
+			is_start_block = false;
+			motion_control_task->push_motion(fast_straight_start);
+			motion_control_task->wait_finish_motion();
+			if (op.n == 1) break;
+			motion_control_task->push_motion(fast_straight[op.n-2]);
+			motion_control_task->wait_finish_motion();
+		}
+		motion_control_task->push_motion(fast_straight[op.n-1]);
+		motion_control_task->wait_finish_motion();
+		break;
+	case Operation::TURN_LEFT90:
+		motion_control_task->push_motion(fast_turn_left);
+		motion_control_task->wait_finish_motion();
+		break;
+	case Operation::TURN_RIGHT90:
+		motion_control_task->push_motion(fast_turn_right);
+		motion_control_task->wait_finish_motion();
+		break;
+	}
+}
+
 void TopTask::task()
 {
+	blink_led_task->create_task();
+
 	TickType_t last_wake_tick = xTaskGetTickCount();
 	while (1) {
 		vTaskDelayUntil(&last_wake_tick, 100);
 		last_wake_tick = xTaskGetTickCount();
 
-		if (ButtonL_get()) {
+		while (1) {
+			vTaskDelay(50);
+			WallDetect::WallInfo wall_info =wall_detect_task->get_wall_info();
+			if (wall_info.front) break;
+		}
+		blink_led_task->delete_task();
+
+		printf("start\n");
+		vTaskDelay(2000);
+		MPU6500_calib_offset();
+		vTaskDelay(1000);
+		printf("calib end\n");
+		motor_control_task->enable();
+
+		bool search_ok = false;
+		while(1) {
+			//センサから取得した壁情報を入れる
+			Direction wallData = getWallData();
+			//ロボットの座標を取得
+			IndexVec robotPos = getRobotPosion();
+
+			//壁情報を更新 次に進むべき方向を計算
+			agent.update(robotPos, wallData);
+
+			//Agentの状態を確認
+			//FINISHEDになったら計測走行にうつる
+			if (agent.getState() == Agent::FINISHED) {
+				search_ok = true;
+				motion_control_task->push_motion(search_straight_end);
+				motion_control_task->wait_finish_motion();
+				motion_control_task->push_motion(search_turn180);
+				motion_control_task->wait_finish_motion();
+				motor_control_task->disable();
+				is_start_block = true;
+				break;
+			}
+
+
+			////ゴールにたどり着いた瞬間に一度だけmazeのバックアップをとる
+			////Mazeクラスはoperator=が定義してあるからa = bでコピーできる
+			//if (prevState == Agent::SEARCHING_NOT_GOAL && agent.getState() == Agent::SEARCHING_REACHED_GOAL) {
+			//	maze_backup = maze;
+			//}
+			//
+			prevState = agent.getState();
+
+
+			//一度はゴールにたどり着き、少なくともゴールできる状態で追加の探索をしているが、
+			//もう時間が無いから探索をうちやめてスタート地点に戻る
+			if (agent.getState() == Agent::SEARCHING_REACHED_GOAL){
+				agent.forceGotoStart();
+			}
+
+
+			//Agentの状態が探索中の場合は次に進むべき方向を取得する
+			Direction nextDir = agent.getNextDirection();
+
+			if (nextDir.byte == 0) {
+				break;
+			}
+
+			//nextDirの示す方向に進む
+			//突然今と180度逆の方向を示してくる場合もあるので注意
+			//止まらないと壁にぶつかる
+			robotMove(nextDir);  //robotMove関数はDirection型を受け取ってロボットをそっちに動かす関数
+		}
+
+		if (search_ok) {
+			// リセット
+			motor_control_task->disable();
+			motion_control_task->reset();
+
+
+			//最短経路の計算 割と時間がかかる(数秒)
+			//引数は斜め走行をするかしないか
+			//trueだと斜め走行をする
+			agent.caclRunSequence(false);
+
+			blink_led_task->create_task();
+			while (1) {
+				vTaskDelay(50);
+				WallDetect::WallInfo wall_info =wall_detect_task->get_wall_info();
+				if (wall_info.front) break;
+			}
+			//while (!ButtonL_get());
+
+			blink_led_task->delete_task();
+
 			printf("start\n");
 			vTaskDelay(2000);
 			MPU6500_calib_offset();
@@ -204,59 +322,26 @@ void TopTask::task()
 			printf("calib end\n");
 			motor_control_task->enable();
 
+			/**********************************
+			 * 計測走行
+			 *********************************/
+			//コマンドリストみたいなやつを取り出す
+			const OperationList &runSequence = agent.getRunSequence();
 
-			while(1) {
-				//センサから取得した壁情報を入れる
-				Direction wallData = getWallData();
-				//ロボットの座標を取得
-				IndexVec robotPos = getRobotPosion();
-
-				//壁情報を更新 次に進むべき方向を計算
-				agent.update(robotPos, wallData);
-
-				//Agentの状態を確認
-				//FINISHEDになったら計測走行にうつる
-				if (agent.getState() == Agent::FINISHED) break;
-
-
-				////ゴールにたどり着いた瞬間に一度だけmazeのバックアップをとる
-				////Mazeクラスはoperator=が定義してあるからa = bでコピーできる
-				//if (prevState == Agent::SEARCHING_NOT_GOAL && agent.getState() == Agent::SEARCHING_REACHED_GOAL) {
-				//	maze_backup = maze;
-				//}
-				//
-				prevState = agent.getState();
-
-
-				////一度はゴールにたどり着き、少なくともゴールできる状態で追加の探索をしているが、
-				////もう時間が無いから探索をうちやめてスタート地点に戻る
-				//if (isTimeOut() && agent.getState() == Agent::SEARCHING_REACHED_GOAL){
-				//	agent.forceGotoStart();
-				//}
-				//
-
-				//Agentの状態が探索中の場合は次に進むべき方向を取得する
-				Direction nextDir = agent.getNextDirection();
-
-				if (nextDir.byte == 0) {
-					break;
-				}
-
-				//nextDirの示す方向に進む
-				//突然今と180度逆の方向を示してくる場合もあるので注意
-				//止まらないと壁にぶつかる
-				robotMove(nextDir);  //robotMove関数はDirection型を受け取ってロボットをそっちに動かす関数
-
-
-				//1区画進んで壁の状態が分かるまで待機
-				//ここで待っている時に割り込みでモーターを制御したりセンサの値を処理したりすることになる
-				motion_control_task->wait_finish_motion();
-
+			//Operationを先頭から順番に実行していく
+			for (size_t i=0;i<runSequence.size();i++) {
+				//i番目のを実行
+				robotMove(runSequence[i]); //robotMode関数はOperation型を受け取ってそれを実行する関数
 			}
-			printf("end\n");
 
-			motor_control_task->disable();
+			motion_control_task->push_motion(fast_straight_end);
+			motion_control_task->wait_finish_motion();
 		}
+
+		blink_led_task->create_task();
+		printf("end\n");
+
+		motor_control_task->disable();
 	}
 }
 

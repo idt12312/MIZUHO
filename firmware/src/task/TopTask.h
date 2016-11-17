@@ -12,6 +12,7 @@
 #include "MotionControlTask.h"
 #include "MotorControlTask.h"
 #include "WallDetectTask.h"
+#include "BlinkLedTask.h"
 #include "Maze.h"
 #include "Agent.h"
 #include "mazeData.h"
@@ -25,11 +26,14 @@ public:
 	void set_motion_control_task(MotionControlTask *p) { motion_control_task = p; }
 	void set_wall_detect_task(WallDetectTask *p) { wall_detect_task = p; }
 
+	void set_blink_led_task(BlinkLedTask *p) { blink_led_task = p; }
+
 
 private:
 	MotorControlTask *motor_control_task;
 	MotionControlTask *motion_control_task;
 	WallDetectTask *wall_detect_task;
+	BlinkLedTask *blink_led_task;
 
 	//探索した迷路の壁情報がはいる
 	Maze maze;
@@ -71,6 +75,7 @@ private:
 	Direction getWallData();
 	IndexVec getRobotPosion();
 	void robotMove(const Direction &dir);
+	void robotMove(const Operation &op);
 };
 
 #endif /* TASK_TOPTASK_H_ */
