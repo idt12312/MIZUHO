@@ -68,7 +68,7 @@
  ***********************************************/
 #define WALL_DETECT_TASK_PRIORITY		2
 #define WALL_DETECT_TASK_PERIOD			5
-#define WALL_DETECT_TASK_STACK_SIZE		1024
+#define WALL_DETECT_TASK_STACK_SIZE		512
 #define WALL_DETECT_RL_THREHOLD			3300
 #define WALL_DETECT_FRONT_THRETHOLD_NOSIDE		3500
 #define WALL_DETECT_FRONT_THRETHOLD_WITH_SIDE		3600
@@ -109,7 +109,7 @@
  * Top Taskの設定
  ***********************************************/
 #define TOP_TASK_PRIORITY		3
-#define TOP_TASK_STACK_SIZE		1024
+#define TOP_TASK_STACK_SIZE		1024*4
 
 
 
