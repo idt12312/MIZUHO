@@ -70,6 +70,7 @@ private:
 	Odometry odo;
 	Trapezoid trapezoid;
 	size_t cnt = 0;
+	float _v_end;
 };
 
 
