@@ -22,6 +22,13 @@ public:
 		const float dx =  -arm_sin_f32(pos.theta) * v.v;
 		const float dy = arm_cos_f32(pos.theta) * v.v;
 
+		if (is_first) {
+			prev_dx = dx;
+			prev_dy = dy;
+			prev_omega = v.omega;
+			is_first = false;
+		}
+
 		// 台形積分
 		pos.x += (dx+prev_dx)/2 * T;
 		pos.y += (dy+prev_dy)/2 * T;
@@ -36,6 +43,7 @@ public:
 	{
 		pos.x = pos.y = pos.theta = 0.0f;
 		prev_dx = prev_dy = prev_omega = 0.0f;
+		is_first = true;
 	}
 
 	void set_pos(const Position& _pos) { pos = _pos; }
@@ -49,6 +57,7 @@ private:
 	float prev_dx = 0.0f;
 	float prev_dy = 0.0f;
 	float prev_omega = 0.0f;
+	bool is_first = true;
 };
 
 #endif /* ODOMETRY_H_ */

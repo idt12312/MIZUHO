@@ -30,7 +30,11 @@ public:
 	float update(float measured, float reference)
 	{
 		const float error = reference - measured;
-		const float error_diff = (error - prev_error)/param.T;
+		float error_diff = (error - prev_error)/param.T;
+		if (is_first) {
+			is_first = false;
+			error_diff = 0.0f;
+		}
 		error_sum = error_sum + error*param.T;
 
 		// 偏差の積分は飽和させる
@@ -51,6 +55,7 @@ public:
 	{
 		error_sum = 0.0f;
 		prev_error = 0.0f;
+		is_first = true;
 	}
 
 	void set_param(const PIDParam& _param) { param = _param; }
@@ -65,6 +70,7 @@ private:
 	float error_sum = 0.0f;
 	float prev_error = 0.0f;
 
+	bool is_first = true;
 };
 
 #endif /* PIDCONTROLLER_H_ */
