@@ -52,6 +52,25 @@ Straight TopTask::fast_straight[16] = {
 		Straight(BLOCK_SIZE*16, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY)
 };
 
+Straight TopTask::fast_straight_start_[16] = {
+		Straight(BLOCK_SIZE, 0, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*2, 0, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*3, 0, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*4, 0, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*5, 0, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*6, 0, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*7, 0, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*8, 0, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*9, 0, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*10, 0, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*11, 0, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*12, 0, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*13, 0, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*14, 0, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*15, 0, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*16, 0, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY)
+};
+
 
 TopTask::TopTask()
 :TaskBase("top", TOP_TASK_PRIORITY, TOP_TASK_STACK_SIZE),
@@ -155,7 +174,13 @@ void TopTask::robotMove(const Direction &dir)
 		if (prev_wall_cnt == 3) {
 			motion_control_task->push_motion(search_straight_end);
 			motion_control_task->wait_finish_motion();
-			motion_control_task->push_motion(search_turn180);
+			motion_control_task->push_motion(search_turn90);
+			motion_control_task->wait_finish_motion();
+			motion_control_task->push_motion(search_back);
+			motion_control_task->wait_finish_motion();
+			motion_control_task->push_motion(search_straight_half_start_end);
+			motion_control_task->wait_finish_motion();
+			motion_control_task->push_motion(search_turn90);
 			motion_control_task->wait_finish_motion();
 			motion_control_task->push_motion(search_back);
 			motion_control_task->wait_finish_motion();
@@ -195,14 +220,13 @@ void TopTask::robotMove(const Operation &op)
 	case Operation::FORWARD:
 		if (is_start_block) {
 			is_start_block = false;
-			motion_control_task->push_motion(fast_straight_start);
-			motion_control_task->wait_finish_motion();
-			if (op.n == 1) break;
-			motion_control_task->push_motion(fast_straight[op.n-2]);
+			motion_control_task->push_motion(fast_straight_start_[op.n-1]);
 			motion_control_task->wait_finish_motion();
 		}
-		motion_control_task->push_motion(fast_straight[op.n-1]);
-		motion_control_task->wait_finish_motion();
+		else {
+			motion_control_task->push_motion(fast_straight[op.n-1]);
+			motion_control_task->wait_finish_motion();
+		}
 		break;
 	case Operation::TURN_LEFT90:
 		motion_control_task->push_motion(fast_turn_left);
@@ -212,6 +236,8 @@ void TopTask::robotMove(const Operation &op)
 		motion_control_task->push_motion(fast_turn_right);
 		motion_control_task->wait_finish_motion();
 		break;
+	case Operation::STOP:
+		break;
 	}
 }
 
@@ -220,8 +246,6 @@ void TopTask::task()
 {
 	bool is_maze_valid = false;
 	bool is_maze_complete = false;
-
-	wall_detect_task->calib_offset();
 
 	while (1) {
 		blink_led_task->set_time(50,450);
@@ -269,6 +293,7 @@ void TopTask::task()
 					motion_control_task->wait_finish_motion();
 					motor_control_task->disable();
 					is_start_block = true;
+					is_maze_valid = true;
 					is_maze_complete = true;
 					break;
 				}
