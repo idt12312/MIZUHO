@@ -15,10 +15,10 @@
 /************************************************
  * 直進
  ***********************************************/
-Straight::Straight(float L, float v_start, float v_end, bool _req_reset_odometry)
+Straight::Straight(float L, float v_start, float v_end, float ax, float v_max, bool _req_reset_odometry)
 : Motion(Position(0,L,0), _req_reset_odometry),
   odo(0.005),
- trapezoid(TRACKING_CONTROL_TASK_PERIOD_SEC, L, STRAIGHT_ACCERALATION, STRAIGHT_MAX_VELOCITY, v_start, v_end),
+ trapezoid(TRACKING_CONTROL_TASK_PERIOD_SEC, L, ax, v_max, v_start, v_end),
  _v_end(v_end)
 {
 
@@ -82,10 +82,10 @@ void Straight::reset(const Position &pos)
 /************************************************
  * 超信地旋回
  ***********************************************/
-PivotTurn::PivotTurn(float angle, bool _req_reset_odometry)
+PivotTurn::PivotTurn(float angle, float rot_ax, float omega_max, bool _req_reset_odometry)
 :Motion(Position(0,0,angle), _req_reset_odometry),
  odo(0.005),
- trapezoid(TRACKING_CONTROL_TASK_PERIOD_SEC, angle, PIVOT_ROTATION_ACCERALATION, PIVOT_ROTATION_VELOCITY, 0, 0)
+ trapezoid(TRACKING_CONTROL_TASK_PERIOD_SEC, angle, rot_ax, omega_max, 0, 0)
 {
 }
 
@@ -125,11 +125,11 @@ void PivotTurn::reset(const Position &pos)
 /************************************************
  * スラロームターン
  ***********************************************/
-SlalomTurn::SlalomTurn(float angle, bool _req_reset_odometry)
+SlalomTurn::SlalomTurn(float angle, float v_const, float rot_ax, float omega_max,  bool _req_reset_odometry)
 :Motion(Position( 0.5*BLOCK_SIZE*((angle>0)?-1.0f:1.0f), BLOCK_SIZE/2, angle), _req_reset_odometry),
  odo(0.005),
- v(SLALOM_VELOCITY),
- trapezoid(TRACKING_CONTROL_TASK_PERIOD_SEC, angle, SLALOM_ROTATION_ACCERALATION, SLALOM_ROTATION_VELOCITY, 0, 0)
+ v(v_const),
+ trapezoid(TRACKING_CONTROL_TASK_PERIOD_SEC, angle, rot_ax, omega_max, 0, 0)
 {
 	odo.reset();
 	curve_len_cnt = 0;

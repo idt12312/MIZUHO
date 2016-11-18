@@ -22,7 +22,7 @@
 #include "TopTask.h"
 #include "ButtonTask.h"
 
-static BlinkLedTask blink_led_task(LED_5, 500);
+static BlinkLedTask blink_led_task(LED_5);
 static BatteryMonitorTask battery_monitor_task;
 static WallDetectTask wall_detect_task;
 static MotorControlTask motor_control_task;
@@ -74,6 +74,7 @@ static void tasks_init()
 	top_task.set_motor_control_task(&motor_control_task);
 	top_task.set_motion_control_task(&motion_control_task);
 	top_task.set_wall_detect_task(&wall_detect_task);
+	top_task.set_blink_led_task(&blink_led_task);
 
 	button_task.set_motor_control_task(&motor_control_task);
 }

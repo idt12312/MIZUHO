@@ -14,8 +14,8 @@
  ***********************************************/
 #define ODOMETRY_USE_GYRO				1
 #define PRINT_WALL_SENSOR_RAW_VALUE		0
-#define ENABLE_BATTERY_MONITOR_ABORT	1
-#define ENABLE_BATTERY_MONITOR_PRINT	1
+#define ENABLE_BATTERY_MONITOR_ABORT	0
+#define ENABLE_BATTERY_MONITOR_PRINT	0
 
 
 /************************************************
@@ -28,22 +28,30 @@
 #define MACHINE_MOTOR_VOLTAGE	7.6f
 
 #define MACHINE_AXLE_TO_TAIL	0.034f
-#define MACHINE_TAIL_COMP_LEN	0.015f
+#define MACHINE_TAIL_COMP_LEN	0.020f
 
 
 /************************************************
  * マシンの走行パラメータ
  ***********************************************/
 #define WALL_DETECT_POINT				0.005f
-#define STOP_TIME_AFTER_MOTION			50
-#define STRAIGHT_DEFAULT_VELOCITY		0.3f
-#define STRAIGHT_MAX_VELOCITY			0.32f
-#define STRAIGHT_ACCERALATION			1.0f
-#define PIVOT_ROTATION_VELOCITY			10.0f
-#define PIVOT_ROTATION_ACCERALATION		30.0f
-#define SLALOM_VELOCITY					0.3f
-#define SLALOM_ROTATION_VELOCITY		10.0f
-#define SLALOM_ROTATION_ACCERALATION	50.0f
+#define STOP_TIME_AFTER_MOTION			80
+
+#define SEARCH_STRAIGHT_DEFAULT_VELOCITY		0.3f
+#define SEARCH_STRAIGHT_MAX_VELOCITY			0.32f
+#define SEARCH_STRAIGHT_ACCERALATION			1.0f
+#define SEARCH_PIVOT_ROTATION_VELOCITY			10.0f
+#define SEARCH_PIVOT_ROTATION_ACCERALATION		30.0f
+#define SEARCH_SLALOM_VELOCITY					0.3f
+#define SEARCH_SLALOM_ROTATION_VELOCITY		7.0f
+#define SEARCH_SLALOM_ROTATION_ACCERALATION	50.0f
+
+#define FAST_STRAIGHT_DEFAULT_VELOCITY		0.3f
+#define FAST_STRAIGHT_MAX_VELOCITY			1.0f
+#define FAST_STRAIGHT_ACCERALATION			1.0f
+#define FAST_SLALOM_VELOCITY				0.3f
+#define FAST_SLALOM_ROTATION_VELOCITY		7.0f
+#define FAST_SLALOM_ROTATION_ACCERALATION	50.0f
 
 
 /************************************************
@@ -73,7 +81,7 @@
 #define WALL_DETECT_FRONT_THRETHOLD_NOSIDE		3500
 #define WALL_DETECT_FRONT_THRETHOLD_WITH_SIDE		3500
 #define WALL_DETECT_CNT					2
-
+#define WALL_OFFSET_CNT					100
 
 /************************************************
  * モータ制御(姿勢制御)の設定
@@ -82,9 +90,9 @@
 #define MOTOR_CONTROL_TASK_PERIOD		1
 #define MOTOR_CONTROL_TASK_PERIOD_SEC	((float)MOTOR_CONTROL_TASK_PERIOD/1000.0f)
 #define MOTOR_CONTROL_TASK_STACK_SIZE	512
-#define MOTOR_CONTROL_P_GAIN			0.8f
+#define MOTOR_CONTROL_P_GAIN			1.0f
 #define MOTOR_CONTROL_I_GAIN			0.01f
-#define MOTOR_CONTROL_D_GAIN			0.0f //0.0001f/2
+#define MOTOR_CONTROL_D_GAIN			0.000f
 
 
 /************************************************
@@ -98,11 +106,13 @@
 #define TRACKING_CONTROL_X_P_GAIN			10.0f
 #define TRACKING_CONTROL_X_D_GAIN			20.0f
 #define TRACKING_CONTROL_Y_P_GAIN			5.0f
-#define TRACKING_CONTROL_Y_D_GAIN			0.001f
+#define TRACKING_CONTROL_Y_D_GAIN			0.0f //0.001f
 #define TRACKING_CONTROL_ANGLE_P_GAIN		10.0f
 #define TRACKING_CONTROL_ANGLE_I_GAIN		0.1f
 #define TRACKING_CONTROL_ANGLE_D_GAIN		0.0f
-#define TRACKING_CONTROL_WALL_P_GAIN		(0.0f/1000.0f/1000.0f)
+#define TRACKING_CONTROL_WALL_FILTER_GAIN	0.01f //小さいほど平滑化される
+#define TRACKING_CONTROL_WALL_TO_OMEGA_GAIN	0.001f
+#define TRACKING_CONTROL_WALL_TO_X_GAIN		(0.01f/1000.0f/1000.0f)
 
 
 /************************************************
@@ -111,6 +121,12 @@
 #define TOP_TASK_PRIORITY		3
 #define TOP_TASK_STACK_SIZE		1024*4
 
+
+/************************************************
+ * LED点滅 Taskの設定
+ ***********************************************/
+#define BLINK_LED_TASK_PRIORITY		4
+#define BLINK_LED_TASK_STACK_SIZE	128
 
 
 #endif /* CONFIG_H_ */

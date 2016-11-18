@@ -13,16 +13,44 @@
 #include "arm_math.h"
 
 
-Straight TopTask::search_straight_start(BLOCK_SIZE-MACHINE_AXLE_TO_TAIL, 0, STRAIGHT_DEFAULT_VELOCITY);
-Straight TopTask::search_straight_half_start(BLOCK_SIZE/2-MACHINE_AXLE_TO_TAIL, 0, STRAIGHT_DEFAULT_VELOCITY);
-Straight TopTask::search_straight_half_start_end(BLOCK_SIZE/2-MACHINE_AXLE_TO_TAIL, 0, 0);
-Straight TopTask::search_straight_end(BLOCK_SIZE/2, STRAIGHT_DEFAULT_VELOCITY, 0);
-Straight TopTask::search_straight(BLOCK_SIZE, STRAIGHT_DEFAULT_VELOCITY, STRAIGHT_DEFAULT_VELOCITY);
-Straight TopTask::search_back(-(BLOCK_SIZE/2-MACHINE_AXLE_TO_TAIL+MACHINE_TAIL_COMP_LEN), 0, 0, true);
-PivotTurn TopTask::search_turn180(PI);
-PivotTurn TopTask::search_turn90(PI/2);
-SlalomTurn TopTask::search_turn_right(-PI/2);
-SlalomTurn TopTask::search_turn_left(PI/2);
+Straight TopTask::search_straight_start(BLOCK_SIZE-MACHINE_AXLE_TO_TAIL, 0, SEARCH_STRAIGHT_DEFAULT_VELOCITY, SEARCH_STRAIGHT_ACCERALATION, SEARCH_STRAIGHT_MAX_VELOCITY);
+Straight TopTask::search_straight_half_start(BLOCK_SIZE/2-MACHINE_AXLE_TO_TAIL, 0, SEARCH_STRAIGHT_DEFAULT_VELOCITY, SEARCH_STRAIGHT_ACCERALATION, SEARCH_STRAIGHT_MAX_VELOCITY);
+Straight TopTask::search_straight_half_start_end(BLOCK_SIZE/2-MACHINE_AXLE_TO_TAIL, 0, 0, SEARCH_STRAIGHT_ACCERALATION, SEARCH_STRAIGHT_MAX_VELOCITY);
+Straight TopTask::search_straight_end(BLOCK_SIZE/2, SEARCH_STRAIGHT_DEFAULT_VELOCITY, 0, SEARCH_STRAIGHT_ACCERALATION, SEARCH_STRAIGHT_MAX_VELOCITY);
+Straight TopTask::search_straight(BLOCK_SIZE, SEARCH_STRAIGHT_DEFAULT_VELOCITY, SEARCH_STRAIGHT_DEFAULT_VELOCITY, SEARCH_STRAIGHT_ACCERALATION, SEARCH_STRAIGHT_MAX_VELOCITY);
+Straight TopTask::search_back(-(BLOCK_SIZE/2-MACHINE_AXLE_TO_TAIL+MACHINE_TAIL_COMP_LEN), 0, 0, true, SEARCH_STRAIGHT_ACCERALATION, SEARCH_STRAIGHT_MAX_VELOCITY);
+PivotTurn TopTask::search_turn180(PI, SEARCH_PIVOT_ROTATION_ACCERALATION, SEARCH_PIVOT_ROTATION_VELOCITY);
+PivotTurn TopTask::search_turn90(PI/2, SEARCH_PIVOT_ROTATION_ACCERALATION, SEARCH_PIVOT_ROTATION_VELOCITY);
+SlalomTurn TopTask::search_turn_right(-PI/2, SEARCH_STRAIGHT_DEFAULT_VELOCITY, SEARCH_SLALOM_ROTATION_ACCERALATION, SEARCH_SLALOM_ROTATION_VELOCITY);
+SlalomTurn TopTask::search_turn_left(PI/2, SEARCH_STRAIGHT_DEFAULT_VELOCITY, SEARCH_SLALOM_ROTATION_ACCERALATION, SEARCH_SLALOM_ROTATION_VELOCITY);
+
+
+Straight TopTask::fast_straight_start(BLOCK_SIZE-MACHINE_AXLE_TO_TAIL, 0, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY);
+Straight TopTask::fast_straight_end(BLOCK_SIZE/2+MACHINE_AXLE_TO_TAIL*2, FAST_STRAIGHT_DEFAULT_VELOCITY, 0, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY);
+SlalomTurn TopTask::fast_turn_right(-PI/2, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_SLALOM_ROTATION_ACCERALATION, FAST_SLALOM_ROTATION_VELOCITY);
+SlalomTurn TopTask::fast_turn_left(PI/2, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_SLALOM_ROTATION_ACCERALATION, FAST_SLALOM_ROTATION_VELOCITY);
+
+
+Straight TopTask::test_straight(BLOCK_SIZE*6, 0, 0, SEARCH_STRAIGHT_ACCERALATION, SEARCH_STRAIGHT_MAX_VELOCITY);
+
+Straight TopTask::fast_straight[16] = {
+		Straight(BLOCK_SIZE, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*2, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*3, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*4, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*5, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*6, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*7, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*8, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*9, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*10, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*11, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*12, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*13, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*14, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*15, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
+		Straight(BLOCK_SIZE*16, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY)
+};
 
 
 TopTask::TopTask()
@@ -89,9 +117,6 @@ IndexVec TopTask::getRobotPosion()
 
 void TopTask::robotMove(const Direction &dir)
 {
-
-
-
 	int8_t robot_dir_index = 0;
 	while (1) {
 		if (robot_dir.byte == NORTH << robot_dir_index) break;
@@ -112,31 +137,30 @@ void TopTask::robotMove(const Direction &dir)
 			is_start_block = false;
 		}
 		else motion_control_task->push_motion(search_straight);
+
+		motion_control_task->wait_finish_motion();
 	}
 	// 右
 	else if (dir_diff == 1 || dir_diff == -3) {
 		motion_control_task->push_motion(search_turn_right);
+		motion_control_task->wait_finish_motion();
 	}
 	// 左
 	else if (dir_diff == -1 || dir_diff == 3) {
 		motion_control_task->push_motion(search_turn_left);
+		motion_control_task->wait_finish_motion();
 	}
 	// 180度ターン
 	else  {
 		if (prev_wall_cnt == 3) {
 			motion_control_task->push_motion(search_straight_end);
 			motion_control_task->wait_finish_motion();
-			motion_control_task->push_motion(search_turn90);
-			motion_control_task->wait_finish_motion();
-			motion_control_task->push_motion(search_back);
-			motion_control_task->wait_finish_motion();
-			motion_control_task->push_motion(search_straight_half_start_end);
-			motion_control_task->wait_finish_motion();
-			motion_control_task->push_motion(search_turn90);
+			motion_control_task->push_motion(search_turn180);
 			motion_control_task->wait_finish_motion();
 			motion_control_task->push_motion(search_back);
 			motion_control_task->wait_finish_motion();
 			motion_control_task->push_motion(search_straight_start);
+			motion_control_task->wait_finish_motion();
 		}
 		else {
 			motion_control_task->push_motion(search_straight_end);
@@ -144,6 +168,7 @@ void TopTask::robotMove(const Direction &dir)
 			motion_control_task->push_motion(search_turn180);
 			motion_control_task->wait_finish_motion();
 			motion_control_task->push_motion(search_straight_half_start);
+			motion_control_task->wait_finish_motion();
 		}
 	}
 
@@ -164,19 +189,65 @@ void TopTask::robotMove(const Direction &dir)
 }
 
 
+void TopTask::robotMove(const Operation &op)
+{
+	switch (op.op) {
+	case Operation::FORWARD:
+		if (is_start_block) {
+			is_start_block = false;
+			motion_control_task->push_motion(fast_straight_start);
+			motion_control_task->wait_finish_motion();
+			if (op.n == 1) break;
+			motion_control_task->push_motion(fast_straight[op.n-2]);
+			motion_control_task->wait_finish_motion();
+		}
+		motion_control_task->push_motion(fast_straight[op.n-1]);
+		motion_control_task->wait_finish_motion();
+		break;
+	case Operation::TURN_LEFT90:
+		motion_control_task->push_motion(fast_turn_left);
+		motion_control_task->wait_finish_motion();
+		break;
+	case Operation::TURN_RIGHT90:
+		motion_control_task->push_motion(fast_turn_right);
+		motion_control_task->wait_finish_motion();
+		break;
+	}
+}
+
+
 void TopTask::task()
 {
-	TickType_t last_wake_tick = xTaskGetTickCount();
-	while (1) {
-		vTaskDelayUntil(&last_wake_tick, 100);
-		last_wake_tick = xTaskGetTickCount();
+	bool is_maze_valid = false;
+	bool is_maze_complete = false;
 
-		if (ButtonL_get()) {
-			printf("start\n");
+	wall_detect_task->calib_offset();
+
+	while (1) {
+		blink_led_task->set_time(50,450);
+		motor_control_task->disable();
+
+		while (1) {
+			vTaskDelay(100);
+			if (ButtonL_get()) break;
+		}
+		blink_led_task->set_time(300,300);
+		while (1) {
+			vTaskDelay(50);
+			WallDetect::WallInfo wall_info =wall_detect_task->get_wall_info();
+			if (wall_info.front) break;
+		}
+		if (!is_maze_valid) {
+			blink_led_task->set_time(50,50);
+
 			vTaskDelay(2000);
 			MPU6500_calib_offset();
+			wall_detect_task->calib_offset();
 			vTaskDelay(1000);
-			printf("calib end\n");
+
+			motion_control_task->reset();
+
+			blink_led_task->set_time(100, 1900);
 			motor_control_task->enable();
 
 
@@ -191,28 +262,30 @@ void TopTask::task()
 
 				//Agentの状態を確認
 				//FINISHEDになったら計測走行にうつる
-				if (agent.getState() == Agent::FINISHED) break;
+				if (agent.getState() == Agent::FINISHED) {
+					motion_control_task->push_motion(search_straight_end);
+					motion_control_task->wait_finish_motion();
+					motion_control_task->push_motion(search_turn180);
+					motion_control_task->wait_finish_motion();
+					motor_control_task->disable();
+					is_start_block = true;
+					is_maze_complete = true;
+					break;
+				}
 
+				//ゴールにたどり着いた瞬間に一度だけmazeのバックアップをとる
+				//Mazeクラスはoperator=が定義してあるからa = bでコピーできる
+				if (prevState == Agent::SEARCHING_NOT_GOAL && agent.getState() == Agent::SEARCHING_REACHED_GOAL) {
+					maze_backup = maze;
+					is_maze_valid = true;
+					blink_led_task->set_time(100, 900);
+				}
 
-				////ゴールにたどり着いた瞬間に一度だけmazeのバックアップをとる
-				////Mazeクラスはoperator=が定義してあるからa = bでコピーできる
-				//if (prevState == Agent::SEARCHING_NOT_GOAL && agent.getState() == Agent::SEARCHING_REACHED_GOAL) {
-				//	maze_backup = maze;
-				//}
-				//
 				prevState = agent.getState();
 
 
-				////一度はゴールにたどり着き、少なくともゴールできる状態で追加の探索をしているが、
-				////もう時間が無いから探索をうちやめてスタート地点に戻る
-				//if (isTimeOut() && agent.getState() == Agent::SEARCHING_REACHED_GOAL){
-				//	agent.forceGotoStart();
-				//}
-				//
-
 				//Agentの状態が探索中の場合は次に進むべき方向を取得する
 				Direction nextDir = agent.getNextDirection();
-
 				if (nextDir.byte == 0) {
 					break;
 				}
@@ -221,16 +294,50 @@ void TopTask::task()
 				//突然今と180度逆の方向を示してくる場合もあるので注意
 				//止まらないと壁にぶつかる
 				robotMove(nextDir);  //robotMove関数はDirection型を受け取ってロボットをそっちに動かす関数
-
-
-				//1区画進んで壁の状態が分かるまで待機
-				//ここで待っている時に割り込みでモーターを制御したりセンサの値を処理したりすることになる
-				motion_control_task->wait_finish_motion();
-
 			}
-			printf("end\n");
+		}
+		else {
+			blink_led_task->set_time(50,50);
 
+			vTaskDelay(2000);
+			MPU6500_calib_offset();
+			wall_detect_task->calib_offset();
+			vTaskDelay(1000);
+
+			// リセット
 			motor_control_task->disable();
+			motion_control_task->reset();
+
+
+			// 迷路情報が不完全の場合はバックアップから復元する
+			if (!is_maze_complete) {
+				agent.resumeAt(Agent::FINISHED, maze_backup);
+			}
+
+
+			//最短経路の計算 割と時間がかかる(数秒)
+			//引数は斜め走行をするかしないか
+			//trueだと斜め走行をする
+			agent.caclRunSequence(false);
+
+
+			blink_led_task->set_time(100, 1900);
+			motor_control_task->enable();
+
+			/**********************************
+			 * 計測走行
+			 *********************************/
+			//コマンドリストみたいなやつを取り出す
+			const OperationList &runSequence = agent.getRunSequence();
+
+			//Operationを先頭から順番に実行していく
+			for (size_t i=0;i<runSequence.size();i++) {
+				//i番目のを実行
+				robotMove(runSequence[i]); //robotMode関数はOperation型を受け取ってそれを実行する関数
+			}
+
+			motion_control_task->push_motion(fast_straight_end);
+			motion_control_task->wait_finish_motion();
 		}
 	}
 }

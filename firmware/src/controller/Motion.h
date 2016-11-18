@@ -60,7 +60,7 @@ protected:
  ***********************************************/
 class Straight : public Motion {
 public:
-	Straight(float L, float v_start, float v_end, bool _req_reset_odometry=false);
+	Straight(float L, float v_start, float v_end, float ax, float v_max, bool _req_reset_odometry=false);
 	virtual ~Straight();
 
 	TrackingTarget next();
@@ -79,7 +79,7 @@ private:
  ***********************************************/
 class PivotTurn : public Motion {
 public:
-	PivotTurn(float angle, bool _req_reset_odometry=false);
+	PivotTurn(float angle, float rot_ax, float omega_max, bool _req_reset_odometry=false);
 	virtual ~PivotTurn();
 
 	TrackingTarget next();
@@ -97,7 +97,7 @@ private:
  ***********************************************/
 class SlalomTurn : public Motion {
 public:
-	SlalomTurn(float angle, bool _req_reset_odometry=false);
+	SlalomTurn(float angle, float v_const, float rot_ax, float omega_max, bool _req_reset_odometry=false);
 	virtual ~SlalomTurn();
 
 	TrackingTarget next();

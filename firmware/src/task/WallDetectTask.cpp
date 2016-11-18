@@ -7,7 +7,7 @@
 
 #include "WallDetectTask.h"
 #include "led_button.h"
-
+#include <cstdio>
 
 WallDetectTask::WallDetectTask()
 :TaskBase("wall detect", WALL_DETECT_TASK_PRIORITY, WALL_DETECT_TASK_STACK_SIZE),
@@ -51,7 +51,19 @@ void WallDetectTask::task()
 		xQueueOverwrite(wall_info_queue, &wall_info);
 
 #if PRINT_WALL_SENSOR_RAW_VALUE==1
-		printf("raw:%5u %5u %5u %5u\n", result.sensor1,result.sensor2,result.sensor3,result.sensor4);
+		if (wall_info.front) Led_on(LED_2 | LED_3);
+		else Led_off(LED_2 | LED_3);
+		if (wall_info.left) Led_on(LED_1);
+		else Led_off(LED_1);
+		if (wall_info.right) Led_on(LED_4);
+		else Led_off(LED_4);
+
+		static int print_cnt = 0;
+		print_cnt++;
+		if (print_cnt > 100/WALL_DETECT_TASK_PERIOD) {
+			print_cnt = 0;
+			std::printf("raw:%5u %5u %5u %5u\n", result.sensor1,result.sensor2,result.sensor3,result.sensor4);
+		}
 #endif
 
 	}
