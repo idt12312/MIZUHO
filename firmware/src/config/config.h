@@ -120,5 +120,11 @@
 #define TOP_TASK_STACK_SIZE		1024*4
 
 
+/************************************************
+ * LED点滅 Taskの設定
+ ***********************************************/
+#define BLINK_LED_TASK_PRIORITY		4
+#define BLINK_LED_TASK_STACK_SIZE	128
+
 
 #endif /* CONFIG_H_ */
