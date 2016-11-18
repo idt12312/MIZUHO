@@ -169,13 +169,13 @@ void MotionControlTask::task()
 			const WallDetect::WallInfo wall_info = wall_detect_task->get_wall_info();
 			if (wall_info.left && wall_info.right) {
 				wall_filtered = (1.0f-TRACKING_CONTROL_WALL_FILTER_GAIN)*wall_filtered + TRACKING_CONTROL_WALL_FILTER_GAIN * (wall_info.right_value - wall_info.left_value);
-			}
+			}/*
 			else if (wall_info.left) {
 				wall_filtered = (1.0f-TRACKING_CONTROL_WALL_FILTER_GAIN)*wall_filtered + TRACKING_CONTROL_WALL_FILTER_GAIN * ( - wall_info.left_value);
 			}
 			else if (wall_info.right) {
 				wall_filtered = (1.0f-TRACKING_CONTROL_WALL_FILTER_GAIN)*wall_filtered + TRACKING_CONTROL_WALL_FILTER_GAIN * wall_info.right_value;
-			}
+			}*/
 			else {
 				wall_filtered = 0;
 			}
