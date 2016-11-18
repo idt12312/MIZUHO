@@ -81,7 +81,7 @@
 #define WALL_DETECT_FRONT_THRETHOLD_NOSIDE		3500
 #define WALL_DETECT_FRONT_THRETHOLD_WITH_SIDE		3500
 #define WALL_DETECT_CNT					2
-
+#define WALL_OFFSET_CNT					100
 
 /************************************************
  * モータ制御(姿勢制御)の設定
@@ -110,7 +110,9 @@
 #define TRACKING_CONTROL_ANGLE_P_GAIN		10.0f
 #define TRACKING_CONTROL_ANGLE_I_GAIN		0.1f
 #define TRACKING_CONTROL_ANGLE_D_GAIN		0.0f
-#define TRACKING_CONTROL_WALL_P_GAIN		(0.0f/1000.0f/1000.0f)
+#define TRACKING_CONTROL_WALL_FILTER_GAIN	0.01f //小さいほど平滑化される
+#define TRACKING_CONTROL_WALL_TO_OMEGA_GAIN	0.001f
+#define TRACKING_CONTROL_WALL_TO_X_GAIN		(0.01f/1000.0f/1000.0f)
 
 
 /************************************************

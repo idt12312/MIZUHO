@@ -129,23 +129,10 @@ void MotionControlTask::update_motion()
 		odometry.set_pos(pos_err);
 		motion->reset(odometry.get_pos());
 		tracking_controller.reset();
+		wall_filtered = 0;
 	}
 	else {
 		motion = nullptr;
-	}
-}
-
-
-void MotionControlTask::wall_trace_control()
-{
-	const WallDetect::WallInfo wall_info = wall_detect_task->get_wall_info();
-	if (wall_info.left && wall_info.right) {
-		// 右によっている　右のセンサの値が大きくなる rl_diffが大きくなる
-		// pos.xを大きくする 原点が左に動いたことになる 機体は左に行こうとする
-		// rl_diffは+-3500のオーダ　中心付近では多分+-1000くらいで変動
-		Position current_pos = odometry.get_pos();
-		current_pos.x += TRACKING_CONTROL_WALL_P_GAIN * wall_info.rl_diff;
-		odometry.set_pos(current_pos);
 	}
 }
 
@@ -165,6 +152,7 @@ void MotionControlTask::task()
 			update_motion();
 		}
 
+
 		// motionが空(queueが空)の時はその場にとどまる
 		if (motion == nullptr) {
 			motor_control_task->set_reference(Velocity(0,0));
@@ -174,19 +162,45 @@ void MotionControlTask::task()
 		// 次の目標点をセット
 		const TrackingTarget target = motion->next();
 
-		// 壁トレース制御
-		// 壁情報を使ってodometoryのx座標を修正する
-		// 補正は直進時のみかける
+
+		// 直進時の横壁壁補正のための壁情報のフィルタリング
+		// 機体が右によっている or 右方向を向いているほどwall_filteredの値は大きくなる
 		if (target.type == TrackingTarget::Type::STRAIGHT) {
-			wall_trace_control();
+			const WallDetect::WallInfo wall_info = wall_detect_task->get_wall_info();
+			if (wall_info.left && wall_info.right) {
+				wall_filtered = (1.0f-TRACKING_CONTROL_WALL_FILTER_GAIN)*wall_filtered + TRACKING_CONTROL_WALL_FILTER_GAIN * (wall_info.right_value - wall_info.left_value);
+			}
+			else if (wall_info.left) {
+				wall_filtered = (1.0f-TRACKING_CONTROL_WALL_FILTER_GAIN)*wall_filtered + TRACKING_CONTROL_WALL_FILTER_GAIN * ( - wall_info.left_value);
+			}
+			else if (wall_info.right) {
+				wall_filtered = (1.0f-TRACKING_CONTROL_WALL_FILTER_GAIN)*wall_filtered + TRACKING_CONTROL_WALL_FILTER_GAIN * wall_info.right_value;
+			}
+			else {
+				wall_filtered = 0;
+			}
+		}
+		else {
+			wall_filtered = 0;
 		}
 
+
+		// 壁情報を使ってオドメトリを修正
+		Position current_pos = odometry.get_pos();
+		current_pos.x += TRACKING_CONTROL_WALL_TO_X_GAIN*wall_filtered;
+		odometry.set_pos(current_pos);
+
 		// 目標点に追従をする制御
-		const Velocity motor_ref = tracking_controller.update(odometry.get_pos(), target);
+		Velocity motor_ref = tracking_controller.update(odometry.get_pos(), target);
+
+		// 壁情報から目標角速度を修正(フィードフォワード入力)
+		motor_ref.omega += TRACKING_CONTROL_WALL_TO_OMEGA_GAIN*wall_filtered;
+
+
 		motor_control_task->set_reference(motor_ref);
 
 
-
+		// 次の壁を読む地点に到達したことを通知
 		const Position goal_pos = motion->get_gial_pos();
 		if (!is_wall_detect_point_notified) {
 			if (target.type == TrackingTarget::Type::STRAIGHT) {

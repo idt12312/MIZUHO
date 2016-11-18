@@ -48,10 +48,11 @@ private:
 	bool is_first = true;
 	bool is_wall_detect_point_notified = true;
 
+	float wall_filtered = 0.0f;
+
 	virtual void task();
 	void update_odometry();
 	void update_motion();
-	void wall_trace_control();
 };
 
 #endif /* TASK_MOTIONCONTROLTASK_H_ */

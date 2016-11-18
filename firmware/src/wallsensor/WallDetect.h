@@ -18,6 +18,12 @@ private:
 	uint8_t left_cnt = 0;
 	uint8_t front_cnt = 0;
 
+	size_t offset_cnt = 0;
+	uint32_t right_offset_sum = 0;
+	uint32_t left_offset_sum = 0;
+	uint32_t right_offset = 0;
+	uint32_t left_offset = 0;
+
 public:
 	WallDetect(){}
 	virtual ~WallDetect(){}
@@ -26,14 +32,33 @@ public:
 		bool right;
 		bool left;
 		bool front;
-		int32_t rl_diff;
+		int32_t right_value;
+		int32_t left_value;
 	};
+
+	void calib_offset()
+	{
+		offset_cnt = WALL_OFFSET_CNT;
+		left_offset_sum = 0;
+		right_offset_sum = 0;
+	}
 
 	WallInfo update(const QuadratureDemodulator::Result &sensor_value)
 	{
+		if (offset_cnt>0) {
+			left_offset_sum += sensor_value.sensor2;
+			right_offset_sum += sensor_value.sensor3;
+
+			offset_cnt--;
+			if (offset_cnt == 0) {
+				left_offset = left_offset_sum / WALL_OFFSET_CNT;
+				right_offset = right_offset_sum / WALL_OFFSET_CNT;
+			}
+		}
+
+
 		// センサが閾値以下 -> カウンタをクリア
 		// センサが閾値以上 -> カウンタをWALL_DETECT_CNTで飽和させながらカウントアップ
-
 		if (sensor_value.sensor2 < WALL_DETECT_RL_THREHOLD) left_cnt = 0;
 		else left_cnt = std::min(left_cnt+1, WALL_DETECT_CNT);
 
@@ -55,7 +80,8 @@ public:
 		wall_info.front = front_cnt == WALL_DETECT_CNT;
 		wall_info.right = right_cnt == WALL_DETECT_CNT;
 		wall_info.left = left_cnt == WALL_DETECT_CNT;
-		wall_info.rl_diff = sensor_value.sensor4 - sensor_value.sensor1;
+		wall_info.right_value = sensor_value.sensor3 - right_offset;
+		wall_info.left_value =  sensor_value.sensor2 - left_offset;
 
 		return wall_info;
 	}

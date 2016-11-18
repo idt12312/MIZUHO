@@ -21,6 +21,8 @@ public:
 
 	WallDetect::WallInfo get_wall_info();
 
+	void calib_offset() { wall_detector.calib_offset(); }
+
 
 private:
 	QuadratureDemodulator demodulator;
