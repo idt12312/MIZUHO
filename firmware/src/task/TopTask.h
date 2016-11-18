@@ -38,7 +38,7 @@ private:
 	//探索した迷路の壁情報がはいる
 	Maze maze;
 	//クラッシュした時のためのバックアップ
-	//Maze maze_backup;
+	Maze maze_backup;
 
 
 	//探索の指示を出す
@@ -66,6 +66,8 @@ private:
 	static SlalomTurn fast_turn_right;
 	static SlalomTurn fast_turn_left;
 	static Straight fast_straight[16];
+
+	static Straight test_straight;
 
 	bool is_start_block = true;
 	int prev_wall_cnt = 0;

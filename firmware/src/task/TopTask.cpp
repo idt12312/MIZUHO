@@ -26,9 +26,12 @@ SlalomTurn TopTask::search_turn_left(PI/2, SEARCH_STRAIGHT_DEFAULT_VELOCITY, SEA
 
 
 Straight TopTask::fast_straight_start(BLOCK_SIZE-MACHINE_AXLE_TO_TAIL, 0, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY);
-Straight TopTask::fast_straight_end(BLOCK_SIZE/2, FAST_STRAIGHT_DEFAULT_VELOCITY, 0, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY);
+Straight TopTask::fast_straight_end(BLOCK_SIZE/2+MACHINE_AXLE_TO_TAIL*2, FAST_STRAIGHT_DEFAULT_VELOCITY, 0, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY);
 SlalomTurn TopTask::fast_turn_right(-PI/2, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_SLALOM_ROTATION_ACCERALATION, FAST_SLALOM_ROTATION_VELOCITY);
 SlalomTurn TopTask::fast_turn_left(PI/2, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_SLALOM_ROTATION_ACCERALATION, FAST_SLALOM_ROTATION_VELOCITY);
+
+
+Straight TopTask::test_straight(BLOCK_SIZE*6, 0, 0, SEARCH_STRAIGHT_ACCERALATION, SEARCH_STRAIGHT_MAX_VELOCITY);
 
 Straight TopTask::fast_straight[16] = {
 		Straight(BLOCK_SIZE, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_DEFAULT_VELOCITY, FAST_STRAIGHT_ACCERALATION, FAST_STRAIGHT_MAX_VELOCITY),
@@ -152,13 +155,7 @@ void TopTask::robotMove(const Direction &dir)
 		if (prev_wall_cnt == 3) {
 			motion_control_task->push_motion(search_straight_end);
 			motion_control_task->wait_finish_motion();
-			motion_control_task->push_motion(search_turn90);
-			motion_control_task->wait_finish_motion();
-			motion_control_task->push_motion(search_back);
-			motion_control_task->wait_finish_motion();
-			motion_control_task->push_motion(search_straight_half_start_end);
-			motion_control_task->wait_finish_motion();
-			motion_control_task->push_motion(search_turn90);
+			motion_control_task->push_motion(search_turn180);
 			motion_control_task->wait_finish_motion();
 			motion_control_task->push_motion(search_back);
 			motion_control_task->wait_finish_motion();
@@ -218,86 +215,104 @@ void TopTask::robotMove(const Operation &op)
 	}
 }
 
+
 void TopTask::task()
 {
-	blink_led_task->create_task();
+	bool is_maze_valid = false;
+	bool is_maze_complete = false;
 
-	TickType_t last_wake_tick = xTaskGetTickCount();
+	wall_detect_task->calib_offset();
+
 	while (1) {
-		vTaskDelayUntil(&last_wake_tick, 100);
-		last_wake_tick = xTaskGetTickCount();
+		blink_led_task->set_time(50,450);
+		motor_control_task->disable();
 
+		while (1) {
+			vTaskDelay(100);
+			if (ButtonL_get()) break;
+		}
+		blink_led_task->set_time(300,300);
 		while (1) {
 			vTaskDelay(50);
 			WallDetect::WallInfo wall_info =wall_detect_task->get_wall_info();
 			if (wall_info.front) break;
 		}
-		blink_led_task->delete_task();
+		if (!is_maze_valid) {
+			blink_led_task->set_time(50,50);
 
-		printf("start\n");
-		vTaskDelay(2000);
-		MPU6500_calib_offset();
-		vTaskDelay(1000);
-		printf("calib end\n");
-		motor_control_task->enable();
+			vTaskDelay(2000);
+			MPU6500_calib_offset();
+			wall_detect_task->calib_offset();
+			vTaskDelay(1000);
 
-		bool search_ok = false;
-		while(1) {
-			//センサから取得した壁情報を入れる
-			Direction wallData = getWallData();
-			//ロボットの座標を取得
-			IndexVec robotPos = getRobotPosion();
+			motion_control_task->reset();
 
-			//壁情報を更新 次に進むべき方向を計算
-			agent.update(robotPos, wallData);
+			blink_led_task->set_time(100, 1900);
+			motor_control_task->enable();
 
-			//Agentの状態を確認
-			//FINISHEDになったら計測走行にうつる
-			if (agent.getState() == Agent::FINISHED) {
-				search_ok = true;
-				motion_control_task->push_motion(search_straight_end);
-				motion_control_task->wait_finish_motion();
-				motion_control_task->push_motion(search_turn180);
-				motion_control_task->wait_finish_motion();
-				motor_control_task->disable();
-				is_start_block = true;
-				break;
+
+			while(1) {
+				//センサから取得した壁情報を入れる
+				Direction wallData = getWallData();
+				//ロボットの座標を取得
+				IndexVec robotPos = getRobotPosion();
+
+				//壁情報を更新 次に進むべき方向を計算
+				agent.update(robotPos, wallData);
+
+				//Agentの状態を確認
+				//FINISHEDになったら計測走行にうつる
+				if (agent.getState() == Agent::FINISHED) {
+					motion_control_task->push_motion(search_straight_end);
+					motion_control_task->wait_finish_motion();
+					motion_control_task->push_motion(search_turn180);
+					motion_control_task->wait_finish_motion();
+					motor_control_task->disable();
+					is_start_block = true;
+					is_maze_complete = true;
+					break;
+				}
+
+				//ゴールにたどり着いた瞬間に一度だけmazeのバックアップをとる
+				//Mazeクラスはoperator=が定義してあるからa = bでコピーできる
+				if (prevState == Agent::SEARCHING_NOT_GOAL && agent.getState() == Agent::SEARCHING_REACHED_GOAL) {
+					maze_backup = maze;
+					is_maze_valid = true;
+					blink_led_task->set_time(100, 900);
+				}
+
+				prevState = agent.getState();
+
+
+				//Agentの状態が探索中の場合は次に進むべき方向を取得する
+				Direction nextDir = agent.getNextDirection();
+				if (nextDir.byte == 0) {
+					break;
+				}
+
+				//nextDirの示す方向に進む
+				//突然今と180度逆の方向を示してくる場合もあるので注意
+				//止まらないと壁にぶつかる
+				robotMove(nextDir);  //robotMove関数はDirection型を受け取ってロボットをそっちに動かす関数
 			}
-
-
-			////ゴールにたどり着いた瞬間に一度だけmazeのバックアップをとる
-			////Mazeクラスはoperator=が定義してあるからa = bでコピーできる
-			//if (prevState == Agent::SEARCHING_NOT_GOAL && agent.getState() == Agent::SEARCHING_REACHED_GOAL) {
-			//	maze_backup = maze;
-			//}
-			//
-			prevState = agent.getState();
-
-
-			//一度はゴールにたどり着き、少なくともゴールできる状態で追加の探索をしているが、
-			//もう時間が無いから探索をうちやめてスタート地点に戻る
-			if (agent.getState() == Agent::SEARCHING_REACHED_GOAL){
-				agent.forceGotoStart();
-			}
-
-
-			//Agentの状態が探索中の場合は次に進むべき方向を取得する
-			Direction nextDir = agent.getNextDirection();
-
-			if (nextDir.byte == 0) {
-				break;
-			}
-
-			//nextDirの示す方向に進む
-			//突然今と180度逆の方向を示してくる場合もあるので注意
-			//止まらないと壁にぶつかる
-			robotMove(nextDir);  //robotMove関数はDirection型を受け取ってロボットをそっちに動かす関数
 		}
+		else {
+			blink_led_task->set_time(50,50);
 
-		if (search_ok) {
+			vTaskDelay(2000);
+			MPU6500_calib_offset();
+			wall_detect_task->calib_offset();
+			vTaskDelay(1000);
+
 			// リセット
 			motor_control_task->disable();
 			motion_control_task->reset();
+
+
+			// 迷路情報が不完全の場合はバックアップから復元する
+			if (!is_maze_complete) {
+				agent.resumeAt(Agent::FINISHED, maze_backup);
+			}
 
 
 			//最短経路の計算 割と時間がかかる(数秒)
@@ -305,21 +320,8 @@ void TopTask::task()
 			//trueだと斜め走行をする
 			agent.caclRunSequence(false);
 
-			blink_led_task->create_task();
-			while (1) {
-				vTaskDelay(50);
-				WallDetect::WallInfo wall_info =wall_detect_task->get_wall_info();
-				if (wall_info.front) break;
-			}
-			//while (!ButtonL_get());
 
-			blink_led_task->delete_task();
-
-			printf("start\n");
-			vTaskDelay(2000);
-			MPU6500_calib_offset();
-			vTaskDelay(1000);
-			printf("calib end\n");
+			blink_led_task->set_time(100, 1900);
 			motor_control_task->enable();
 
 			/**********************************
@@ -337,11 +339,6 @@ void TopTask::task()
 			motion_control_task->push_motion(fast_straight_end);
 			motion_control_task->wait_finish_motion();
 		}
-
-		blink_led_task->create_task();
-		printf("end\n");
-
-		motor_control_task->disable();
 	}
 }
 
