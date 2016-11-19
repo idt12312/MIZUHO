@@ -66,6 +66,7 @@ private:
 	static SlalomTurn fast_turn_right;
 	static SlalomTurn fast_turn_left;
 	static Straight fast_straight[16];
+	static Straight fast_straight_start_[16];
 
 	static Straight test_straight;
 
