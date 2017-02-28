@@ -86,10 +86,10 @@ EELAYER END
 $Descr A3 16535 11693
 encoding utf-8
 Sheet 3 12
-Title ""
-Date ""
-Rev ""
-Comp ""
+Title "MIZUHO"
+Date "2016/12/10"
+Rev "1"
+Comp "@idt12312"
 Comment1 ""
 Comment2 ""
 Comment3 ""

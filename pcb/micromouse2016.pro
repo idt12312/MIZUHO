@@ -1,4 +1,4 @@
-update=2016年09月18日日曜日 10:26:00
+update=2016年12月10日土曜日 15:27:41
 version=1
 last_client=kicad
 [pcbnew]
@@ -110,3 +110,13 @@ LibName78=Xicor
 LibName79=xilinx
 LibName80=Zilog
 LibName81=lib/micromouse2016
+[schematic_editor]
+version=1
+PageLayoutDescrFile=
+PlotDirectoryName=
+SubpartIdSeparator=0
+SubpartFirstId=65
+NetFmtName=
+SpiceForceRefPrefix=0
+SpiceUseNetNumbers=0
+LabSize=60
