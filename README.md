@@ -45,7 +45,10 @@
 [回路図はここからpdfダウンロードできます。](./doc/micromouse2016.pdf)
 
 ## 壁センサ
-壁センサは少し工夫したので説明しておきます。  
+壁センサは少し工夫したので説明しておきます。  
+ロ技研内での技術交流のために作成したまとめ文章も置いておくので、よかったら見てください  
+[研究報告書](https://github.com/idt12312/MIZUHO/blob/master/doc/docment.pdf)  
+
 外乱を防ぐために赤外線LEDを変調して使っています。
 
 <img src="./doc/wall_sensor.png" width=400>
